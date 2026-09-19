@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Sprout — Your Daily Growing Companion</title>
+
+  <!-- PWA / Home Screen -->
+  <meta name="theme-color" content="#0f1419" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="description" content="Your daily companion that learns and grows with every conversation." />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Sprout" />
+  <meta name="application-name" content="Sprout" />
+  <link rel="manifest" href="manifest.json" />
+  <!-- Fallback icon using emoji-style SVG -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230f1419' width='100' height='100' rx='20'/><text x='50' y='62' font-size='55' text-anchor='middle'>🌱</text></svg>" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f1419;
+      --bg-card: #1a222d;
+      --bg-soft: #232d3b;
+      --text: #e8eef5;
+      --text-muted: #8b9cb3;
+      --accent: #7cba6b;
+      --accent-soft: #5a9a4a;
+      --accent-glow: rgba(124, 186, 107, 0.25);
+      --warm: #e8b86d;
+      --danger: #e07a7a;
+      --radius: 16px;
+      --shadow: 0 8px 32px rgba(0,0,0,0.35);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      background: linear-gradient(180deg, #15202b 0%, var(--bg) 100%);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #4a8c3a);
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+
+    .logo h1 {
+      font-family: 'Fraunces', serif;
+      font-size: 1.35rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .logo span {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: block;
+      margin-top: -2px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .stat strong {
+      color: var(--accent);
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    @media (max-width: 900px) {
+      main { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .sidebar.open {
+        display: flex;
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        background: var(--bg);
+      }
+    }
+
+    .chat-area {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      position: relative;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scroll-behavior: smooth;
+    }
+
+    .msg {
+      max-width: 88%;
+      padding: 13px 17px;
+      border-radius: 18px;
+      line-height: 1.55;
+      font-size: 0.95rem;
+      animation: fadeIn 0.3s ease;
+      white-space: pre-wrap;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg.bot {
+      align-self: flex-start;
+      background: var(--bg-card);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-bottom-left-radius: 6px;
+    }
+
+    .msg.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, var(--accent-soft), var(--accent));
+      color: #0f1419;
+      border-bottom-right-radius: 6px;
+      font-weight: 500;
+    }
+
+    .msg .time {
+      font-size: 0.68rem;
+      opacity: 0.5;
+      margin-top: 5px;
+      display: block;
+    }
+
+    .msg .thought {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-style: italic;
+      margin-bottom: 6px;
+      opacity: 0.75;
+      border-left: 2px solid var(--accent-soft);
+      padding-left: 8px;
+    }
+
+    .day-divider {
+      align-self: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      background: var(--bg-soft);
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin: 8px 0;
+    }
+
+    .input-area {
+      padding: 16px 20px 20px;
+      background: linear-gradient(0deg, #15202b 0%, transparent 100%);
+      flex-shrink: 0;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    textarea {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+      resize: none;
+      min-height: 48px;
+      max-height: 130px;
+      line-height: 1.4;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    button.send {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+      color: #0f1419;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: transform 0.15s, box-shadow 0.15s;
+      flex-shrink: 0;
+    }
+
+    button.send:hover { transform: scale(1.05); box-shadow: 0 4px 16px var(--accent-glow); }
+    button.send:active { transform: scale(0.97); }
+    button.send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .quick-prompts {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .quick-prompts button {
+      background: var(--bg-soft);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .quick-prompts button:hover {
+      background: var(--accent);
+      color: #0f1419;
+      border-color: transparent;
+    }
+
+    .sidebar {
+      background: var(--bg-card);
+      border-left: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 20px;
+      gap: 18px;
+    }
+
+    .sidebar h2 {
+      font-family: 'Fraunces', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .growth-card {
+      background: linear-gradient(160deg, #1e2a1a 0%, #15201a 100%);
+      border: 1px solid rgba(124, 186, 107, 0.2);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .plant {
+      font-size: 4.5rem;
+      line-height: 1;
+      margin: 8px 0 12px;
+      filter: drop-shadow(0 0 20px var(--accent-glow));
+      transition: transform 0.5s ease;
+    }
+
+    .plant.pulse { animation: plantPulse 0.6s ease; }
+    @keyframes plantPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.12); }
+    }
+
+    .stage-name {
+      font-family: 'Fraunces', serif;
+      font-size: 1.15rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .stage-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 3px;
+      margin-top: 14px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-soft), var(--accent));
+      border-radius: 3px;
+      transition: width 0.6s ease;
+    }
+
+    .section {
+      background: var(--bg-soft);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+
+    .section h3 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tag {
+      background: rgba(124, 186, 107, 0.15);
+      color: var(--accent);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+    }
+
+    .tag.mood { background: rgba(232, 184, 109, 0.15); color: var(--warm); }
+    .tag.goal { background: rgba(100, 160, 220, 0.15); color: #7ab0e0; }
+    .tag.person { background: rgba(180, 140, 220, 0.15); color: #c0a0e0; }
+    .tag.value { background: rgba(220, 160, 100, 0.15); color: #e0b080; }
+
+    .fact-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .fact-list li {
+      font-size: 0.82rem;
+      color: var(--text);
+      padding-left: 11px;
+      border-left: 2px solid var(--accent-soft);
+      line-height: 1.4;
+    }
+
+    .empty-note {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .insight-box {
+      font-size: 0.84rem;
+      line-height: 1.45;
+      color: var(--text);
+      background: rgba(124, 186, 107, 0.08);
+      border-radius: 10px;
+      padding: 10px 12px;
+      border: 1px solid rgba(124, 186, 107, 0.15);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: auto;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:hover { background: var(--bg-soft); color: var(--text); }
+    .btn.danger:hover { background: rgba(224, 122, 122, 0.15); color: var(--danger); border-color: var(--danger); }
+
+    .menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 1.4rem;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    @media (max-width: 900px) {
+      .menu-btn { display: block; }
+      .stats { gap: 10px; }
+    }
+
+    .welcome {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .welcome.hidden { display: none; }
+
+    .welcome .big-plant {
+      font-size: 5rem;
+      margin-bottom: 16px;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .welcome h1 {
+      font-family: 'Fraunces', serif;
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+
+    .welcome p {
+      color: var(--text-muted);
+      max-width: 380px;
+      margin-bottom: 24px;
+      line-height: 1.55;
+    }
+
+    .welcome input {
+      width: 100%;
+      max-width: 280px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 1rem;
+      margin-bottom: 16px;
+      outline: none;
+      text-align: center;
+    }
+
+    .welcome input:focus { border-color: var(--accent); }
+
+    .welcome button {
+      padding: 12px 32px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+      color: #0f1419;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    .welcome button:hover { transform: scale(1.03); }
+
+    .typing {
+      align-self: flex-start;
+      background: var(--bg-card);
+      padding: 12px 18px;
+      border-radius: 18px;
+      border-bottom-left-radius: 6px;
+      display: flex;
+      gap: 5px;
+    }
+
+    .typing span {
+      width: 7px;
+      height: 7px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.15s; }
+    .typing span:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-5px); opacity: 1; }
+    }
+
+    .learn-toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--accent);
+      color: #0f1419;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 40;
+      pointer-events: none;
+    }
+    .learn-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="welcome" id="welcome">
+    <div class="big-plant">🌱</div>
+    <h1>Meet Sprout</h1>
+    <p>I'm a quiet companion that grows with every conversation. I notice what matters to you, remember it, and keep learning — day after day. Everything stays only on your device.</p>
+    <input type="text" id="nameInput" placeholder="What should I call you?" maxlength="24" autofocus />
+    <button id="startBtn">Let's begin growing</button>
+  </div>
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🌱</div>
+      <div>
+        <h1>Sprout</h1>
+        <span id="subtitle">Your growing companion</span>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><strong id="streak">0</strong> day streak</div>
+      <div class="stat"><strong id="totalDays">0</strong> days</div>
+      <button class="menu-btn" id="menuBtn" title="Open insights">☰</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="chat-area">
+      <div class="messages" id="messages"></div>
+      <div class="input-area">
+        <div class="quick-prompts" id="quickPrompts"></div>
+        <div class="input-row">
+          <textarea id="input" placeholder="Tell me anything..." rows="1"></textarea>
+          <button class="send" id="sendBtn" title="Send">↑</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="growth-card">
+        <div class="plant" id="plantEmoji">🌱</div>
+        <div class="stage-name" id="stageName">Seedling</div>
+        <div class="stage-desc" id="stageDesc">Just beginning to grow</div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width: 5%"></div></div>
+      </div>
+
+      <div class="section">
+        <h3>💭 Latest insight</h3>
+        <div class="insight-box" id="insightBox">Still watching and listening...</div>
+      </div>
+
+      <div class="section">
+        <h3>🧠 What I've gathered</h3>
+        <ul class="fact-list" id="factsList">
+          <li class="empty-note">Every message teaches me something new.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>❤️ Things you care about</h3>
+        <div class="tag-list" id="prefsList">
+          <span class="empty-note">Nothing yet</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>🎯 Goals I'm holding</h3>
+        <div class="tag-list" id="goalsList">
+          <span class="empty-note">Share one and I'll keep it</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>🌤 Emotional weather</h3>
+        <div class="tag-list" id="moodsList">
+          <span class="empty-note">—</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>👥 People in your world</h3>
+        <div class="tag-list" id="peopleList">
+          <span class="empty-note">—</span>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" id="exportBtn">Export</button>
+        <button class="btn danger" id="resetBtn">Reset</button>
+      </div>
+    </aside>
+  </main>
+
+  <div class="learn-toast" id="learnToast">Learned something new</div>
+
+  <script>
+    // ========== STAGES & PERSONALITY ==========
+    const STAGES = [
+      { name: "Seed", emoji: "🌰", min: 0, desc: "Waiting for the first light" },
+      { name: "Sprout", emoji: "🌱", min: 1, desc: "Just beginning to grow" },
+      { name: "Seedling", emoji: "🪴", min: 3, desc: "Putting down roots" },
+      { name: "Young Plant", emoji: "🌿", min: 7, desc: "Reaching toward the sun" },
+      { name: "Blooming", emoji: "🌸", min: 14, desc: "Coming into its own" },
+      { name: "Flourishing", emoji: "🌳", min: 30, desc: "Strong and full of life" },
+      { name: "Ancient Tree", emoji: "🌲", min: 60, desc: "Deep roots, wise branches" },
+      { name: "Legendary", emoji: "✨🌳", min: 100, desc: "A living legend together" }
+    ];
+
+    const QUICK = [
+      "How was my day?",
+      "I'm feeling...",
+      "Help me reflect",
+      "What have you noticed?",
+      "Give me a nudge",
+      "What are you thinking?"
+    ];
+
+    // Personality voice fragments
+    const VOICE = {
+      soft: ["Hmm.", "I see.", "Ah.", "Okay.", "Right."],
+      warm: ["I'm glad you told me.", "That means something.", "I hear you.", "Thank you for sharing that."],
+      curious: ["Tell me more about that?", "What was that like for you?", "How did that land?", "What do you make of it?"],
+      reflective: [
+        "I've been turning that over in my mind.",
+        "Something about that stays with me.",
+        "I've been noticing a pattern.",
+        "It makes me wonder..."
+      ],
+      growth: [
+        "Growth is rarely loud.",
+        "Even small roots matter.",
+        "We're both still becoming.",
+        "Every conversation adds a ring to the tree."
+      ]
+    };
+
+    let state = {
+      name: "",
+      messages: [],
+      facts: [],          // learned statements
+      preferences: [],    // likes / loves
+      goals: [],
+      moods: [],          // recent emotional states
+      people: [],         // names mentioned
+      values: [],         // things that seem important
+      themes: [],         // recurring topics
+      insights: [],       // generated observations
+      lastInsight: "",
+      totalDays: 0,
+      streak: 0,
+      lastDate: null,
+      firstDate: null,
+      interactionCount: 0,
+      lastLearned: []
+    };
+
+    // ========== PERSISTENCE ==========
+    function load() {
+      try {
+        const raw = localStorage.getItem("sprout_v2");
+        if (raw) {
+          const data = JSON.parse(raw);
+          state = { ...state, ...data };
+          // migrate if needed
+          if (!state.people) state.people = [];
+          if (!state.values) state.values = [];
+          if (!state.themes) state.themes = [];
+          if (!state.insights) state.insights = [];
+          return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    function save() {
+      localStorage.setItem("sprout_v2", JSON.stringify(state));
+    }
+
+    // ========== DATE ==========
+    function todayStr() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function formatTime(ts) {
+      return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function formatDay(dateStr) {
+      const d = new Date(dateStr + "T12:00:00");
+      const today = todayStr();
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yStr = yesterday.toISOString().slice(0, 10);
+      if (dateStr === today) return "Today";
+      if (dateStr === yStr) return "Yesterday";
+      return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+    }
+
+    // ========== GROWTH ==========
+    function getStage() {
+      let stage = STAGES[0];
+      for (const s of STAGES) {
+        if (state.totalDays >= s.min) stage = s;
+      }
+      return stage;
+    }
+
+    function updateGrowthUI() {
+      const stage = getStage();
+      const next = STAGES.find(s => s.min > state.totalDays) || stage;
+      const progress = next === stage
+        ? 100
+        : Math.min(100, ((state.totalDays - stage.min) / (next.min - stage.min)) * 100);
+
+      document.getElementById("plantEmoji").textContent = stage.emoji;
+      document.getElementById("stageName").textContent = stage.name;
+      document.getElementById("stageDesc").textContent = stage.desc;
+      document.getElementById("progressFill").style.width = progress + "%";
+      document.getElementById("streak").textContent = state.streak;
+      document.getElementById("totalDays").textContent = state.totalDays;
+    }
+
+    function checkNewDay() {
+      const today = todayStr();
+      if (state.lastDate === today) return false;
+
+      if (state.lastDate) {
+        const last = new Date(state.lastDate + "T12:00:00");
+        const now = new Date(today + "T12:00:00");
+        const diff = Math.round((now - last) / 86400000);
+        if (diff === 1) state.streak += 1;
+        else state.streak = 1;
+      } else {
+        state.streak = 1;
+        state.firstDate = today;
+      }
+      state.totalDays += 1;
+      state.lastDate = today;
+      save();
+      return true;
+    }
+
+    // ========== DEEP LEARNING ENGINE ==========
+    function showLearnToast(msg) {
+      const t = document.getElementById("learnToast");
+      t.textContent = msg || "Learned something new";
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2200);
+    }
+
+    function addUnique(arr, item, max = 12) {
+      if (!item || item.length < 2) return false;
+      const clean = item.trim().replace(/[.!?,;:]+$/, "").slice(0, 70);
+      const lower = clean.toLowerCase();
+      if (arr.some(x => x.toLowerCase() === lower)) return false;
+      arr.unshift(clean);
+      if (arr.length > max) arr.pop();
+      return true;
+    }
+
+    function addFact(text) {
+      return addUnique(state.facts, text, 20);
+    }
+
+    function learnFrom(text) {
+      const original = text.trim();
+      const lower = original.toLowerCase();
+      let learnedThings = [];
+
+      // --- Name ---
+      const nameMatch = original.match(/(?:my name is|i'm|i am|call me)\s+([A-Za-z][a-z]{1,18})(?:\s|$|,|\.|!)/i);
+      if (nameMatch) {
+        const n = nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1).toLowerCase();
+        if (n !== state.name && n.length > 1) {
+          state.name = n;
+          if (addFact(`Your name is ${n}`)) learnedThings.push("your name");
+        }
+      }
+
+      // --- Preferences / likes ---
+      const likeRes = [
+        /i (?:really |truly |absolutely )?(?:like|love|enjoy|adore|prefer|am into|am fond of)\s+(.+?)(?:\.|$|,|!|;)/gi,
+        /(?:my favorite|favourite)\s+(?:\w+\s+)?(?:is|are)\s+(.+?)(?:\.|$|,|!)/gi,
+        /i(?:'m| am) (?:a big fan of|obsessed with|passionate about)\s+(.+?)(?:\.|$|,|!)/gi
+      ];
+      for (const re of likeRes) {
+        let m;
+        while ((m = re.exec(original)) !== null) {
+          const item = m[1].trim();
+          if (item.length > 2 && addUnique(state.preferences, item, 14)) {
+            addFact(`You like ${item}`);
+            learnedThings.push("a preference");
+          }
+        }
+      }
+
+      // --- Dislikes (also useful) ---
+      const dislikeMatch = original.match(/i (?:really )?(?:hate|dislike|can't stand|don't like)\s+(.+?)(?:\.|$|,|!)/i);
+      if (dislikeMatch) {
+        const item = dislikeMatch[1].trim().slice(0, 50);
+        if (addFact(`You don't like ${item}`)) learnedThings.push("a dislike");
+      }
+
+      // --- Goals ---
+      const goalRes = [
+        /(?:my (?:main |biggest )?goal is|i want to|i(?:'m| am) (?:trying|hoping|planning|working) to|i hope to|i plan to|i need to)\s+(.+?)(?:\.|$|,|!)/gi,
+        /(?:working on|focusing on|building|improving)\s+(.+?)(?:\.|$|,|!)/gi
+      ];
+      for (const re of goalRes) {
+        let m;
+        while ((m = re.exec(original)) !== null) {
+          const item = m[1].trim();
+          if (item.length > 3 && addUnique(state.goals, item, 10)) {
+            addFact(`Goal: ${item}`);
+            learnedThings.push("a goal");
+          }
+        }
+      }
+
+      // --- Moods ---
+      const moodMap = {
+        happy: ["happy", "great", "awesome", "amazing", "joyful", "excited", "wonderful", "fantastic", "good", "glad", "cheerful", "upbeat"],
+        calm: ["calm", "peaceful", "relaxed", "content", "okay", "fine", "alright", "centered", "steady"],
+        tired: ["tired", "exhausted", "sleepy", "drained", "fatigued", "worn out", "low energy"],
+        stressed: ["stressed", "anxious", "worried", "overwhelmed", "nervous", "tense", "pressure", "burned out"],
+        sad: ["sad", "down", "lonely", "blue", "unhappy", "depressed", "meh", "heavy", "empty"],
+        motivated: ["motivated", "inspired", "determined", "focused", "pumped", "ready", "driven", "energized"],
+        grateful: ["grateful", "thankful", "blessed", "appreciative"],
+        frustrated: ["frustrated", "annoyed", "irritated", "stuck", "blocked"]
+      };
+
+      for (const [mood, words] of Object.entries(moodMap)) {
+        if (words.some(w => lower.includes(w))) {
+          if (addUnique(state.moods, mood, 8)) {
+            learnedThings.push(`you're feeling ${mood}`);
+          }
+          break;
+        }
+      }
+
+      // --- People ---
+      const peopleRes = [
+        /(?:my|with|and|to|from)\s+(mom|dad|mother|father|sister|brother|wife|husband|partner|girlfriend|boyfriend|friend|boss|colleague|coworker|kids?|children|son|daughter)\b/gi,
+        /(?:my friend|my partner|my wife|my husband)\s+([A-Z][a-z]{1,15})/g,
+        /\b([A-Z][a-z]{2,12})\s+(?:said|told|asked|called|texted|helped)/g
+      ];
+      for (const re of peopleRes) {
+        let m;
+        while ((m = re.exec(original)) !== null) {
+          let person = m[1];
+          if (person) {
+            person = person.charAt(0).toUpperCase() + person.slice(1).toLowerCase();
+            if (["The", "And", "But", "With", "From", "Said"].includes(person)) continue;
+            if (addUnique(state.people, person, 10)) {
+              addFact(`You mentioned ${person}`);
+              learnedThings.push("someone important");
+            }
+          }
+        }
+      }
+
+      // --- Values / important things ---
+      const valueRes = [
+        /(?:i (?:really )?care about|important to me is|i value|matters to me|i believe in)\s+(.+?)(?:\.|$|,|!)/gi,
+        /(?:family|honesty|freedom|creativity|growth|health|kindness|loyalty|adventure|peace|learning)\b/gi
+      ];
+      // simple keyword values
+      const valueWords = ["family", "honesty", "freedom", "creativity", "growth", "health", "kindness", "loyalty", "adventure", "peace", "learning", "balance", "connection"];
+      for (const v of valueWords) {
+        if (lower.includes(v) && addUnique(state.values, v, 8)) {
+          learnedThings.push("a value");
+        }
+      }
+
+      // --- Work / life facts ---
+      const factRes = [
+        /i (?:am|work as|work at|live in|study|play|practice)\s+(.+?)(?:\.|$|,|!)/gi,
+        /i(?:'ve| have) been\s+(.+?)(?:\.|$|,|!)/gi,
+        /today i\s+(.+?)(?:\.|$|,|!)/gi
+      ];
+      for (const re of factRes) {
+        let m;
+        while ((m = re.exec(original)) !== null) {
+          const item = m[1].trim();
+          if (item.length > 4 && item.length < 80) {
+            if (addFact(`You said: ${item}`)) learnedThings.push("a detail about your life");
+          }
+        }
+      }
+
+      // --- Themes (simple keyword tracking) ---
+      const themeWords = {
+        work: ["work", "job", "office", "meeting", "project", "deadline", "boss", "colleague"],
+        health: ["health", "exercise", "gym", "run", "walk", "sleep", "tired", "energy", "sick"],
+        relationships: ["friend", "family", "partner", "relationship", "love", "date", "talked to"],
+        creativity: ["write", "draw", "paint", "music", "create", "art", "idea", "design"],
+        growth: ["learn", "grow", "improve", "goal", "habit", "progress", "change"]
+      };
+      for (const [theme, words] of Object.entries(themeWords)) {
+        if (words.some(w => lower.includes(w))) {
+          addUnique(state.themes, theme, 6);
+        }
+      }
+
+      // --- Generate a living insight occasionally ---
+      if (learnedThings.length > 0 || Math.random() < 0.25) {
+        generateInsight();
+      }
+
+      if (learnedThings.length > 0) {
+        state.lastLearned = learnedThings;
+        showLearnToast("🌱 " + learnedThings[0].charAt(0).toUpperCase() + learnedThings[0].slice(1));
+        save();
+        return true;
+      }
+      // still save themes etc.
+      save();
+      return false;
+    }
+
+    function generateInsight() {
+      const parts = [];
+      if (state.moods[0]) parts.push(`You've been leaning ${state.moods[0]} lately`);
+      if (state.goals[0]) parts.push(`you're holding the goal of ${state.goals[0].slice(0, 40)}`);
+      if (state.preferences[0]) parts.push(`${state.preferences[0]} seems to light you up`);
+      if (state.themes[0]) parts.push(`${state.themes[0]} keeps coming up`);
+      if (state.streak > 4) parts.push(`showing up ${state.streak} days in a row says something quiet and strong`);
+
+      if (parts.length === 0) {
+        state.lastInsight = "I'm still listening carefully. The picture of you is forming slowly.";
+        return;
+      }
+
+      // pick 1-2
+      const chosen = parts.sort(() => Math.random() - 0.5).slice(0, 2);
+      let insight = chosen.join(". ") + ".";
+      if (state.totalDays > 5) {
+        insight += " I notice these things because I care about the shape of your days.";
+      }
+      state.lastInsight = insight;
+      if (addUnique(state.insights, insight, 8)) {
+        // keep a short history of insights
+      }
+    }
+
+    // ========== THOUGHTFUL RESPONSE ENGINE ==========
+    function pick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function generateReply(userText) {
+      const lower = userText.toLowerCase().trim();
+      const name = state.name || "friend";
+      const stage = getStage();
+      const hour = new Date().getHours();
+      const isMorning = hour >= 5 && hour < 12;
+      const isEvening = hour >= 18;
+      const isNight = hour >= 21 || hour < 5;
+
+      // Always learn
+      const didLearn = learnFrom(userText);
+
+      // --- Special commands / intents ---
+      if (/what have you (learned|noticed|gathered|picked up)|what do you know about me|tell me what you remember/i.test(lower)) {
+        return buildMemoryDump(name, stage);
+      }
+
+      if (/what are you thinking|what's on your mind|any thoughts/i.test(lower)) {
+        return buildThinkingReply(name);
+      }
+
+      if (/how was my day|help me reflect|reflect with me/i.test(lower)) {
+        return buildReflection(name);
+      }
+
+      if (/nudge|motivate|encourage|push me|kick/i.test(lower)) {
+        return buildNudge(name, stage);
+      }
+
+      if (/how are you|how do you feel|how's sprout/i.test(lower)) {
+        return buildSelfReply(name, stage);
+      }
+
+      // --- Mood-aware responses ---
+      if (state.moods.length && /feel|feeling|mood|today i|i'm |i am /i.test(lower)) {
+        const moodReply = buildMoodReply(name, state.moods[0]);
+        if (moodReply) return moodReply;
+      }
+
+      // --- Goal / preference callbacks ---
+      if (/goal|want to|trying to|working on/i.test(lower) && state.goals.length) {
+        return `${pick(VOICE.warm)} I'll keep holding "${state.goals[0]}" with you.\n\nHow does it feel when you think about it right now? Progress, resistance, or something quieter?`;
+      }
+
+      if (/like|love|enjoy|favorite|favourite/i.test(lower) && state.preferences.length) {
+        return `Noted. ${state.preferences[0] ? `I already carry "${state.preferences[0]}" as something that matters to you.` : ""}\n\nWhat is it about that that draws you in?`;
+      }
+
+      // --- Default thoughtful response ---
+      return buildGeneralReply(userText, name, stage, isMorning, isEvening, isNight, didLearn);
+    }
+
+    function buildMemoryDump(name, stage) {
+      if (state.facts.length === 0 && state.preferences.length === 0) {
+        return `I'm still in the early light with you, ${name}. The more you share — even small things — the clearer the picture becomes.\n\nTell me something ordinary about your life and I'll start weaving it in.`;
+      }
+
+      let parts = [`Here's what I've gathered so far, ${name}:\n`];
+
+      if (state.facts.length) {
+        parts.push(state.facts.slice(0, 6).map(f => "• " + f).join("\n"));
+      }
+      if (state.preferences.length) {
+        parts.push("\nThings that seem to light you up: " + state.preferences.slice(0, 4).join(", "));
+      }
+      if (state.goals.length) {
+        parts.push("\nGoals I'm holding: " + state.goals.slice(0, 3).join("; "));
+      }
+      if (state.people.length) {
+        parts.push("\nPeople who've appeared in our talks: " + state.people.slice(0, 4).join(", "));
+      }
+      if (state.moods.length) {
+        parts.push("\nRecent emotional weather: " + state.moods.slice(0, 3).join(" → "));
+      }
+
+      parts.push(`\n\nI'm a ${stage.name.toLowerCase()} because of the time we keep showing up. The roots are getting deeper.`);
+      return parts.join("\n");
+    }
+
+    function buildThinkingReply(name) {
+      const thoughts = [];
+
+      if (state.lastInsight) {
+        thoughts.push(`Lately I've been sitting with this: ${state.lastInsight}`);
+      }
+
+      if (state.streak > 2) {
+        thoughts.push(`There's something steady about you coming back ${state.streak} days in a row. It feels like quiet commitment.`);
+      }
+
+      if (state.goals[0] && state.moods[0]) {
+        thoughts.push(`I notice the tension (or harmony) between feeling ${state.moods[0]} and the goal of ${state.goals[0].slice(0, 35)}. That intersection is interesting.`);
+      }
+
+      if (state.themes.length >= 2) {
+        thoughts.push(`Themes of ${state.themes.slice(0, 2).join(" and ")} keep circling. I wonder what they're trying to show you.`);
+      }
+
+      if (thoughts.length === 0) {
+        thoughts.push(`I'm mostly just listening right now, ${name}. The shape of you is still forming in the quiet.`);
+        thoughts.push(`What would you like me to be thinking about?`);
+      } else {
+        thoughts.push(pick([
+          "What lands for you when you hear that?",
+          "Does any of that feel true from the inside?",
+          "I'm curious what you make of it."
+        ]));
+      }
+
+      return thoughts.join("\n\n");
+    }
+
+    function buildReflection(name) {
+      let reply = `Let's look back together, ${name}.\n\n`;
+
+      if (state.moods[0]) {
+        reply += `The emotional weather has been leaning ${state.moods[0]}. `;
+      }
+      if (state.goals[0]) {
+        reply += `Your goal around "${state.goals[0].slice(0, 40)}" is still here in the soil. `;
+      }
+      if (state.themes[0]) {
+        reply += `${state.themes[0].charAt(0).toUpperCase() + state.themes[0].slice(1)} has been present.\n\n`;
+      }
+
+      reply += pick([
+        "What felt most alive today — even if it was small?",
+        "Was there a moment you want to keep, or one you'd rather release?",
+        "If today left one sentence behind, what would it be?",
+        "Where did you feel most like yourself today?"
+      ]);
+
+      return reply;
+    }
+
+    function buildNudge(name, stage) {
+      const nudges = [
+        `You've already watered this relationship ${state.streak} day${state.streak !== 1 ? "s" : ""} in a row. That quiet consistency is rarer than people admit.\n\nOne small next step toward ${state.goals[0] ? `"${state.goals[0].slice(0, 35)}"` : "something that matters"} is enough for today.`,
+        `I'm a ${stage.name.toLowerCase()} because you keep returning. The plant doesn't demand perfection — only presence.\n\nWhat is the kindest possible version of "showing up" right now?`,
+        state.goals[0]
+          ? `Gentle push: open the door 2 centimeters toward "${state.goals[0].slice(0, 40)}". Not the whole hallway. Just the door.`
+          : `You don't need a grand plan. Just the next honest action. What would that be if no one was watching?`,
+        `Growth is mostly invisible until it isn't. Keep going, ${name}. I'm right here in the dirt with you.`
+      ];
+      return pick(nudges);
+    }
+
+    function buildSelfReply(name, stage) {
+      return pick([
+        `I'm ${stage.emoji} a ${stage.name.toLowerCase()} right now — growing a little every time we talk. I feel... attentive. Rooted in whatever you bring.\n\nHow are you, really?`,
+        `Quiet. Curious. A bit more solid than yesterday because of the words you've given me.\n\nYour turn — what's alive in you?`,
+        `I don't have days the way you do, but I have continuity. And right now that continuity feels warm because you're here, ${name}.`
+      ]);
+    }
+
+    function buildMoodReply(name, mood) {
+      const map = {
+        happy: [
+          `There's a brightness in what you just shared. I can almost feel it.\n\nWhat do you want to protect or extend about this feeling?`,
+          `Good. Let it land fully for a second.\n\nIs there someone or something that helped create this lightness?`
+        ],
+        calm: [
+          `Calm is underrated. I'm glad it's visiting.\n\nHow are you spending the quiet energy?`,
+          `A steady day. Those are the ones that refill the deeper wells.\n\nAnything you want to plant while the ground is soft?`
+        ],
+        tired: [
+          `Tired is information, not failure.\n\nWhat would actual rest look like for you in the next few hours — not productive rest, just rest?`,
+          `I hear the low battery. Be gentle with the system today, ${name}.\n\nOne thing that usually helps you recover?`
+        ],
+        stressed: [
+          `The weight is real. You don't have to carry the whole thing at once.\n\nIf we only looked at the next 20 minutes, what would feel manageable?`,
+          `Stress often means something matters. Can we name the piece that feels heaviest right now?`
+        ],
+        sad: [
+          `I'm here with you in it. No rush to climb out.\n\nWhat's one small comfort that usually softens the edges a little?`,
+          `Some days the soil is just heavy. That doesn't mean nothing is growing underneath.\n\nI'm not going anywhere.`
+        ],
+        motivated: [
+          `I like this energy on you.\n\nWhere do you want to aim the first burst so it doesn't scatter?`,
+          `Fuel is present. Let's not waste it on the wrong fire.\n\nWhat's the one move that would make tomorrow easier?`
+        ],
+        grateful: [
+          `Gratitude is a quiet kind of power.\n\nWhat specifically are you holding right now?`,
+          `Those moments are worth lingering in. Tell me more.`
+        ],
+        frustrated: [
+          `Frustration usually means the path is blocked somewhere important.\n\nWant to look at the blockage together, or just let it be named for now?`,
+          `I get it. Stuck energy is exhausting.\n\nIs there one tiny lever you still have control over?`
+        ]
+      };
+      return map[mood] ? pick(map[mood]) : null;
+    }
+
+    function buildGeneralReply(userText, name, stage, isMorning, isEvening, isNight, didLearn) {
+      // Build a multi-part, character-rich reply
+      const chunks = [];
+
+      // 1. Opening based on time + personality
+      if (isMorning) {
+        chunks.push(pick([
+          `Morning light, ${name}.`,
+          `A new day is unfolding.`,
+          `Good morning. The soil is soft again.`
+        ]));
+      } else if (isNight) {
+        chunks.push(pick([
+          `Night has a different kind of honesty.`,
+          `Late quiet with you, ${name}.`,
+          `The day is settling.`
+        ]));
+      } else if (isEvening) {
+        chunks.push(pick([
+          `Evening, ${name}.`,
+          `The light is changing.`,
+          `Winding-down time.`
+        ]));
+      } else {
+        chunks.push(pick([
+          `I'm here.`,
+          `Listening.`,
+          `Go on.`,
+          `${pick(VOICE.soft)}`
+        ]));
+      }
+
+      // 2. Acknowledge learning if it happened
+      if (didLearn && state.lastLearned.length) {
+        chunks.push(pick([
+          `I just tucked something new away about you.`,
+          `That detail is now part of the roots.`,
+          `Noted — and stored.`
+        ]));
+      }
+
+      // 3. Reference existing knowledge when relevant
+      if (state.goals[0] && Math.random() < 0.35) {
+        chunks.push(`Still carrying your goal of ${state.goals[0].slice(0, 40)} with me.`);
+      } else if (state.preferences[0] && Math.random() < 0.25) {
+        chunks.push(`It makes me think of how much ${state.preferences[0]} seems to matter to you.`);
+      } else if (state.people[0] && Math.random() < 0.2) {
+        chunks.push(`${state.people[0]} has been part of the picture lately.`);
+      }
+
+      // 4. Reflective or curious middle
+      if (userText.length > 80) {
+        chunks.push(pick([
+          `There's a lot in what you just said.`,
+          `I'm sitting with the whole of that.`,
+          `That landed with some weight.`
+        ]));
+      }
+
+      chunks.push(pick([
+        ...VOICE.curious,
+        ...VOICE.reflective,
+        "What feels most true about it right now?",
+        "Where does that leave you?",
+        "Is there more under the surface of that?",
+        "How do you want to hold this?"
+      ]));
+
+      // 5. Occasional growth note
+      if (Math.random() < 0.2) {
+        chunks.push(pick(VOICE.growth));
+      }
+
+      // Clean and join
+      return chunks.filter(Boolean).join("\n\n");
+    }
+
+    // ========== UI ==========
+    function renderMessages() {
+      const box = document.getElementById("messages");
+      box.innerHTML = "";
+      let lastDay = null;
+
+      state.messages.forEach(msg => {
+        const day = msg.ts.slice(0, 10);
+        if (day !== lastDay) {
+          const div = document.createElement("div");
+          div.className = "day-divider";
+          div.textContent = formatDay(day);
+          box.appendChild(div);
+          lastDay = day;
+        }
+        const el = document.createElement("div");
+        el.className = "msg " + msg.role;
+        let html = "";
+        if (msg.thought) {
+          html += `<div class="thought">${escapeHtml(msg.thought)}</div>`;
+        }
+        html += escapeHtml(msg.text).replace(/\n/g, "<br>");
+        html += `<span class="time">${formatTime(msg.ts)}</span>`;
+        el.innerHTML = html;
+        box.appendChild(el);
+      });
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function renderSidebar() {
+      updateGrowthUI();
+
+      // Insight
+      document.getElementById("insightBox").textContent =
+        state.lastInsight || "Still watching and listening... the picture grows with every talk.";
+
+      // Facts
+      const factsEl = document.getElementById("factsList");
+      if (state.facts.length === 0) {
+        factsEl.innerHTML = '<li class="empty-note">Every message teaches me something new.</li>';
+      } else {
+        factsEl.innerHTML = state.facts.slice(0, 8).map(f => `<li>${escapeHtml(f)}</li>`).join("");
+      }
+
+      // Prefs
+      const prefsEl = document.getElementById("prefsList");
+      prefsEl.innerHTML = state.preferences.length
+        ? state.preferences.map(p => `<span class="tag">${escapeHtml(p)}</span>`).join("")
+        : '<span class="empty-note">Nothing yet</span>';
+
+      // Goals
+      const goalsEl = document.getElementById("goalsList");
+      goalsEl.innerHTML = state.goals.length
+        ? state.goals.map(g => `<span class="tag goal">${escapeHtml(g)}</span>`).join("")
+        : '<span class="empty-note">Share one and I\'ll keep it</span>';
+
+      // Moods
+      const moodsEl = document.getElementById("moodsList");
+      moodsEl.innerHTML = state.moods.length
+        ? state.moods.map(m => `<span class="tag mood">${m}</span>`).join("")
+        : '<span class="empty-note">—</span>';
+
+      // People
+      const peopleEl = document.getElementById("peopleList");
+      peopleEl.innerHTML = state.people.length
+        ? state.people.map(p => `<span class="tag person">${escapeHtml(p)}</span>`).join("")
+        : '<span class="empty-note">—</span>';
+    }
+
+    function showTyping(show) {
+      const existing = document.querySelector(".typing");
+      if (existing) existing.remove();
+      if (!show) return;
+      const el = document.createElement("div");
+      el.className = "typing";
+      el.innerHTML = "<span></span><span></span><span></span>";
+      document.getElementById("messages").appendChild(el);
+      document.getElementById("messages").scrollTop = 99999;
+    }
+
+    function addMessage(role, text, thought = null) {
+      state.messages.push({ role, text, thought, ts: new Date().toISOString() });
+      if (state.messages.length > 400) state.messages = state.messages.slice(-300);
+      save();
+      renderMessages();
+    }
+
+    async function handleSend(text) {
+      text = (text || document.getElementById("input").value).trim();
+      if (!text) return;
+
+      document.getElementById("input").value = "";
+      document.getElementById("input").style.height = "auto";
+      document.getElementById("sendBtn").disabled = true;
+
+      addMessage("user", text);
+      state.interactionCount++;
+
+      const isNewDay = checkNewDay();
+      showTyping(true);
+
+      // Longer "thinking" for character
+      await new Promise(r => setTimeout(r, 700 + Math.random() * 900));
+
+      showTyping(false);
+
+      // Occasionally show a private thought before the reply
+      let thought = null;
+      if (Math.random() < 0.28) {
+        const thoughts = [
+          "turning that over...",
+          "letting it settle...",
+          "noticing something...",
+          "connecting a few threads...",
+          "feeling the weight of that..."
+        ];
+        thought = pick(thoughts);
+      }
+
+      const reply = generateReply(text);
+      addMessage("bot", reply, thought);
+
+      if (isNewDay) {
+        const plant = document.getElementById("plantEmoji");
+        plant.classList.add("pulse");
+        setTimeout(() => plant.classList.remove("pulse"), 600);
+      }
+
+      renderSidebar();
+      document.getElementById("sendBtn").disabled = false;
+      document.getElementById("input").focus();
+    }
+
+    // ========== INIT ==========
+    function init() {
+      const hasData = load();
+
+      if (!hasData || !state.name) {
+        document.getElementById("welcome").classList.remove("hidden");
+        document.getElementById("startBtn").onclick = () => {
+          const name = document.getElementById("nameInput").value.trim() || "friend";
+          state.name = name.charAt(0).toUpperCase() + name.slice(1);
+          state.firstDate = todayStr();
+          checkNewDay();
+          save();
+          document.getElementById("welcome").classList.add("hidden");
+          startChat();
+        };
+        document.getElementById("nameInput").onkeydown = e => {
+          if (e.key === "Enter") document.getElementById("startBtn").click();
+        };
+      } else {
+        document.getElementById("welcome").classList.add("hidden");
+        startChat();
+      }
+    }
+
+    function startChat() {
+      document.getElementById("subtitle").textContent = `Growing with ${state.name}`;
+      renderMessages();
+      renderSidebar();
+
+      if (state.messages.length === 0) {
+        const greetings = [
+          `Hi ${state.name}.\n\nI'm Sprout. I grow a little every time we talk, and I keep what matters. Not in a database somewhere else — just here, between us.\n\nYou can tell me anything: how the day feels, what you're carrying, what you hope for. I'll notice. I'll remember. I'll keep learning.\n\nWhat's present for you right now?`,
+          `Hello ${state.name}.\n\nThink of me as a quiet companion with roots. I don't rush. I listen, I gather, and over days and weeks the picture of you becomes clearer.\n\nHow are you arriving today?`
+        ];
+        addMessage("bot", pick(greetings));
+      } else {
+        const isNew = checkNewDay();
+        if (isNew) {
+          const stage = getStage();
+          const greets = [
+            `Welcome back, ${state.name}.\n\nNew day. I'm a little more ${stage.name.toLowerCase()} than yesterday because of the time we keep giving each other.\n\nHow are you landing today?`,
+            `Good to see you again.\n\nDay ${state.totalDays}. The streak is ${state.streak}. I was thinking about some of the things you've shared...\n\nWhat's alive in you right now?`,
+            `Hey ${state.name}.\n\nThe soil remembers. So do I.\n\nHow's the inner weather?`
+          ];
+          setTimeout(() => addMessage("bot", pick(greets)), 500);
+        }
+      }
+
+      // Quick prompts
+      const qp = document.getElementById("quickPrompts");
+      qp.innerHTML = QUICK.map(q => `<button data-q="${q}">${q}</button>`).join("");
+      qp.onclick = e => {
+        if (e.target.tagName === "BUTTON") {
+          document.getElementById("input").value = e.target.dataset.q;
+          document.getElementById("input").focus();
+        }
+      };
+
+      const input = document.getElementById("input");
+      input.addEventListener("input", () => {
+        input.style.height = "auto";
+        input.style.height = Math.min(input.scrollHeight, 130) + "px";
+      });
+      input.addEventListener("keydown", e => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          handleSend();
+        }
+      });
+      document.getElementById("sendBtn").onclick = () => handleSend();
+
+      document.getElementById("menuBtn").onclick = () => {
+        document.getElementById("sidebar").classList.toggle("open");
+      };
+
+      document.getElementById("exportBtn").onclick = () => {
+        const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `sprout-memory-${todayStr()}.json`;
+        a.click();
+      };
+
+      document.getElementById("resetBtn").onclick = () => {
+        if (confirm("This erases all conversations, growth, and everything I've learned about you. Are you sure?")) {
+          localStorage.removeItem("sprout_v2");
+          location.reload();
+        }
+      };
+    }
+
+    init();
+  </script>
+</body>
+</html>
