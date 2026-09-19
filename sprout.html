@@ -259,6 +259,88 @@
     button.send:active { transform: scale(0.97); }
     button.send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
+    button.cam-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: var(--bg-soft);
+      color: var(--text);
+      font-size: 1.25rem;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    button.cam-btn:hover {
+      background: var(--accent);
+      color: #0f1419;
+      border-color: transparent;
+    }
+
+    /* Camera modal */
+    .cam-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 80;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .cam-modal[hidden] { display: none; }
+    .cam-box {
+      background: var(--bg-card);
+      border-radius: 20px;
+      padding: 16px;
+      width: min(420px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    #camVideo {
+      width: 100%;
+      border-radius: 14px;
+      background: #000;
+      aspect-ratio: 4/3;
+      object-fit: cover;
+    }
+    .cam-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .cam-actions button {
+      flex: 1;
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+    #camCapture {
+      background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+      color: #0f1419;
+    }
+    #camClose.secondary {
+      background: var(--bg-soft);
+      color: var(--text-muted);
+    }
+    .cam-hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .msg img.photo {
+      max-width: 100%;
+      border-radius: 12px;
+      margin-top: 8px;
+      display: block;
+    }
+
     .quick-prompts {
       display: flex;
       gap: 8px;
@@ -601,8 +683,22 @@
       <div class="input-area">
         <div class="quick-prompts" id="quickPrompts"></div>
         <div class="input-row">
-          <textarea id="input" placeholder="Tell me anything..." rows="1"></textarea>
+          <button class="cam-btn" id="camBtn" title="Show something to Sprout">📷</button>
+          <textarea id="input" placeholder="Tell me anything... or ask me to look something up" rows="1"></textarea>
           <button class="send" id="sendBtn" title="Send">↑</button>
+        </div>
+      </div>
+
+      <!-- Camera modal -->
+      <div class="cam-modal" id="camModal" hidden>
+        <div class="cam-box">
+          <video id="camVideo" autoplay playsinline></video>
+          <canvas id="camCanvas" hidden></canvas>
+          <div class="cam-actions">
+            <button id="camCapture">Capture</button>
+            <button id="camClose" class="secondary">Close</button>
+          </div>
+          <p class="cam-hint">Point at something and tap Capture. The photo stays only on your device.</p>
         </div>
       </div>
     </div>
@@ -682,8 +778,8 @@
       "I'm feeling...",
       "Help me reflect",
       "What have you noticed?",
-      "Give me a nudge",
-      "What are you thinking?"
+      "Look this up: ",
+      "Give me a nudge"
     ];
 
     // Personality voice fragments
@@ -1052,6 +1148,20 @@
         return buildSelfReply(name, stage);
       }
 
+      // --- Web search intent ---
+      const searchMatch = lower.match(/(?:look(?:\s+this)?\s+up|search(?:\s+for)?|google|find out|what is|who is|when is|where is|how (?:do|does|to)|tell me about|look up)\s*[:\s]+(.+)/i)
+        || lower.match(/^(?:what is|who is|when is|where is|how (?:do|does|to)|tell me about)\s+(.+)/i);
+      if (searchMatch || /look this up|search the web|google this/i.test(lower)) {
+        let query = searchMatch ? searchMatch[1].trim() : userText.replace(/look this up:?|search(?: the web)?|google this:?/gi, "").trim();
+        if (!query || query.length < 2) query = userText;
+        // Clean query
+        query = query.replace(/[?.!]+$/, "").trim();
+        const url = "https://www.google.com/search?q=" + encodeURIComponent(query);
+        // Open in new tab
+        setTimeout(() => window.open(url, "_blank"), 400);
+        return `I'll look that up for you.\n\nOpening Google for: “${query}”\n\n(If a new tab didn't open, check your popup settings.) When you're back, tell me what you found or what you still wonder about — I'll help you make sense of it.`;
+      }
+
       // --- Mood-aware responses ---
       if (state.moods.length && /feel|feeling|mood|today i|i'm |i am /i.test(lower)) {
         const moodReply = buildMoodReply(name, state.moods[0]);
@@ -1310,7 +1420,12 @@
         if (msg.thought) {
           html += `<div class="thought">${escapeHtml(msg.thought)}</div>`;
         }
-        html += escapeHtml(msg.text).replace(/\n/g, "<br>");
+        if (msg.image) {
+          html += `<img class="photo" src="${msg.image}" alt="Photo you showed Sprout" />`;
+        }
+        if (msg.text) {
+          html += escapeHtml(msg.text).replace(/\n/g, "<br>");
+        }
         html += `<span class="time">${formatTime(msg.ts)}</span>`;
         el.innerHTML = html;
         box.appendChild(el);
@@ -1377,9 +1492,23 @@
       document.getElementById("messages").scrollTop = 99999;
     }
 
-    function addMessage(role, text, thought = null) {
-      state.messages.push({ role, text, thought, ts: new Date().toISOString() });
+    function addMessage(role, text, thought = null, image = null) {
+      const msg = { role, text: text || "", thought, ts: new Date().toISOString() };
+      if (image) msg.image = image;
+      state.messages.push(msg);
+      // Keep storage reasonable — strip old images if too many
       if (state.messages.length > 400) state.messages = state.messages.slice(-300);
+      const imgCount = state.messages.filter(m => m.image).length;
+      if (imgCount > 12) {
+        // remove oldest images to protect localStorage size
+        let removed = 0;
+        for (const m of state.messages) {
+          if (m.image && removed < imgCount - 10) {
+            delete m.image;
+            removed++;
+          }
+        }
+      }
       save();
       renderMessages();
     }
@@ -1461,8 +1590,8 @@
 
       if (state.messages.length === 0) {
         const greetings = [
-          `Hi ${state.name}.\n\nI'm Sprout. I grow a little every time we talk, and I keep what matters. Not in a database somewhere else — just here, between us.\n\nYou can tell me anything: how the day feels, what you're carrying, what you hope for. I'll notice. I'll remember. I'll keep learning.\n\nWhat's present for you right now?`,
-          `Hello ${state.name}.\n\nThink of me as a quiet companion with roots. I don't rush. I listen, I gather, and over days and weeks the picture of you becomes clearer.\n\nHow are you arriving today?`
+          `Hi ${state.name}.\n\nI'm Sprout. I grow a little every time we talk, and I keep what matters — right here on your device.\n\nYou can:\n• Talk about your day, feelings, goals\n• Ask me to look something up (I'll open Google for you)\n• Tap the 📷 button to show me a photo\n\nI'll notice, remember, and keep learning.\n\nWhat's present for you right now?`,
+          `Hello ${state.name}.\n\nI'm a quiet companion with roots. I listen, I gather, and over time the picture of you becomes clearer.\n\nNew powers: I can search the web when you ask, and you can show me things with the camera.\n\nHow are you arriving today?`
         ];
         addMessage("bot", pick(greetings));
       } else {
@@ -1512,6 +1641,68 @@
         a.download = `sprout-memory-${todayStr()}.json`;
         a.click();
       };
+
+      // ===== CAMERA =====
+      let camStream = null;
+      const camModal = document.getElementById("camModal");
+      const camVideo = document.getElementById("camVideo");
+      const camCanvas = document.getElementById("camCanvas");
+
+      async function openCamera() {
+        try {
+          camStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } }, // prefer back camera
+            audio: false
+          });
+          camVideo.srcObject = camStream;
+          camModal.hidden = false;
+        } catch (err) {
+          alert("Camera access was denied or is not available. Please allow camera permission for this site/page.");
+          console.warn(err);
+        }
+      }
+
+      function closeCamera() {
+        if (camStream) {
+          camStream.getTracks().forEach(t => t.stop());
+          camStream = null;
+        }
+        camVideo.srcObject = null;
+        camModal.hidden = true;
+      }
+
+      function capturePhoto() {
+        if (!camStream) return;
+        const w = camVideo.videoWidth;
+        const h = camVideo.videoHeight;
+        camCanvas.width = w;
+        camCanvas.height = h;
+        const ctx = camCanvas.getContext("2d");
+        ctx.drawImage(camVideo, 0, 0, w, h);
+        // Compress for localStorage
+        const dataUrl = camCanvas.toDataURL("image/jpeg", 0.7);
+        closeCamera();
+
+        // Add photo as user message
+        addMessage("user", "I showed you this.", null, dataUrl);
+
+        // Sprout responds
+        setTimeout(() => {
+          const replies = [
+            "I can see the photo you shared. It stays only on your device — I don't send it anywhere.\n\nWhat would you like me to notice or know about it? Tell me what's important in the picture.",
+            "Got it — the image is here with us now.\n\nSince I can't run a full vision model offline, the best way I can help is if you describe what matters in it. What should I pay attention to?",
+            "Photo received. I'm looking at it with you.\n\nWhat's the story or the detail you want me to hold onto?"
+          ];
+          addMessage("bot", pick(replies));
+          // Light learning
+          addFact("You shared a photo with me");
+          renderSidebar();
+        }, 600);
+      }
+
+      document.getElementById("camBtn").onclick = openCamera;
+      document.getElementById("camClose").onclick = closeCamera;
+      document.getElementById("camCapture").onclick = capturePhoto;
 
       document.getElementById("resetBtn").onclick = () => {
         if (confirm("This erases all conversations, growth, and everything I've learned about you. Are you sure?")) {
