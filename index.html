@@ -1,0 +1,1920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Sprout — Personal AI that researches & reflects</title>
+
+  <!-- PWA -->
+  <meta name="theme-color" content="#0f1419" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="description" content="A personal AI companion that researches the web, learns from you, and thinks about its own growth." />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Sprout" />
+  <meta name="application-name" content="Sprout" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230f1419' width='100' height='100' rx='20'/><text x='50' y='62' font-size='55' text-anchor='middle'>🌱</text></svg>" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f1419;
+      --bg-card: #1a222d;
+      --bg-soft: #232d3b;
+      --text: #e8eef5;
+      --text-muted: #8b9cb3;
+      --accent: #7cba6b;
+      --accent-soft: #5a9a4a;
+      --accent-glow: rgba(124, 186, 107, 0.25);
+      --warm: #e8b86d;
+      --danger: #e07a7a;
+      --info: #7ab0e0;
+      --radius: 16px;
+      --shadow: 0 8px 32px rgba(0,0,0,0.35);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100dvh;
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      background: linear-gradient(180deg, #15202b 0%, var(--bg) 100%);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #4a8c3a);
+      display: grid; place-items: center; font-size: 18px;
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+    .logo h1 {
+      font-family: 'Fraunces', serif;
+      font-size: 1.35rem; font-weight: 600; letter-spacing: -0.02em;
+    }
+    .logo span { font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: -2px; }
+    .stats { display: flex; gap: 14px; align-items: center; font-size: 0.8rem; color: var(--text-muted); }
+    .stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .stat strong { color: var(--accent); font-size: 1.05rem; font-weight: 600; }
+    main {
+      flex: 1; height: calc(100% - 65px);
+      display: grid; grid-template-columns: 1fr 360px;
+      overflow: hidden; min-height: 0;
+    }
+    @media (max-width: 960px) {
+      main { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .sidebar.open {
+        display: flex; position: fixed; inset: 0; z-index: 50; background: var(--bg);
+      }
+    }
+    .chat-area {
+      display: flex; height: 100%; min-height: 0; flex-direction: column; position: relative;
+    }
+    .messages {
+      flex: 1; overflow-y: auto; padding: 20px;
+      display: flex; flex-direction: column; gap: 14px; scroll-behavior: smooth;
+    }
+    .msg {
+      max-width: min(88%, 720px); padding: 13px 17px; border-radius: 18px;
+      line-height: 1.55; font-size: 0.95rem; animation: fadeIn 0.3s ease; white-space: pre-wrap;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .msg.bot {
+      align-self: flex-start; background: var(--bg-card);
+      border: 1px solid rgba(255,255,255,0.05); border-bottom-left-radius: 6px;
+    }
+    .msg.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, var(--accent-soft), var(--accent));
+      color: #0f1419; border-bottom-right-radius: 6px; font-weight: 500;
+    }
+    .msg .time { font-size: 0.68rem; opacity: 0.5; margin-top: 5px; display: block; }
+    .msg .thought {
+      font-size: 0.78rem; color: var(--text-muted); font-style: italic;
+      margin-bottom: 6px; opacity: 0.8; border-left: 2px solid var(--accent-soft); padding-left: 8px;
+    }
+    .msg .meta-think {
+      font-size: 0.72rem; color: var(--info); font-style: italic;
+      margin-bottom: 8px; opacity: 0.85; border-left: 2px solid var(--info); padding-left: 8px;
+    }
+    .day-divider {
+      align-self: center; font-size: 0.75rem; color: var(--text-muted);
+      background: var(--bg-soft); padding: 4px 12px; border-radius: 20px; margin: 8px 0;
+    }
+    .input-area {
+      padding: 12px max(14px, env(safe-area-inset-left)) max(14px, env(safe-area-inset-bottom));
+      padding-left: max(14px, env(safe-area-inset-left));
+      padding-right: max(14px, env(safe-area-inset-right));
+      background: linear-gradient(0deg, #15202b 0%, rgba(15,20,25,0.96) 70%, transparent 100%);
+      flex-shrink: 0; position: relative; z-index: 20;
+      transform: translateY(var(--keyboard-offset, 0px));
+      transition: transform 0.08s linear; will-change: transform;
+    }
+    .input-row { display: flex; gap: 10px; align-items: flex-end; }
+    textarea {
+      flex: 1; width: 0; background: var(--bg-card);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 14px;
+      padding: 12px 16px; color: var(--text); font-family: inherit; font-size: 0.95rem;
+      resize: none; min-height: 48px; max-height: 130px; line-height: 1.4; outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    button.send {
+      width: 48px; height: 48px; border-radius: 14px; border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+      color: #0f1419; font-size: 1.2rem; cursor: pointer; display: grid; place-items: center;
+      transition: transform 0.15s, box-shadow 0.15s; flex-shrink: 0;
+    }
+    button.send:hover { transform: scale(1.05); box-shadow: 0 4px 16px var(--accent-glow); }
+    button.send:active { transform: scale(0.97); }
+    button.send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    button.cam-btn, button.think-btn {
+      width: 48px; height: 48px; border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.1); background: var(--bg-soft);
+      color: var(--text); font-size: 1.15rem; cursor: pointer; display: grid; place-items: center;
+      flex-shrink: 0; transition: all 0.15s;
+    }
+    button.cam-btn:hover, button.think-btn:hover {
+      background: var(--accent); color: #0f1419; border-color: transparent;
+    }
+    .cam-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 80;
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .cam-modal[hidden] { display: none; }
+    .cam-box {
+      background: var(--bg-card); border-radius: 20px; padding: 16px;
+      width: min(420px, 100%); display: flex; flex-direction: column; gap: 12px;
+    }
+    #camVideo { width: 100%; border-radius: 14px; background: #000; aspect-ratio: 4/3; object-fit: cover; }
+    .cam-actions { display: flex; gap: 10px; }
+    .cam-actions button {
+      flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 600; font-size: 0.95rem; cursor: pointer;
+    }
+    #camCapture { background: linear-gradient(135deg, var(--accent), var(--accent-soft)); color: #0f1419; }
+    #camClose.secondary { background: var(--bg-soft); color: var(--text-muted); }
+    .cam-hint { font-size: 0.78rem; color: var(--text-muted); text-align: center; }
+    .msg img.photo { max-width: 100%; border-radius: 12px; margin-top: 8px; display: block; }
+    .quick-prompts { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .quick-prompts button {
+      background: var(--bg-soft); border: 1px solid rgba(255,255,255,0.06);
+      color: var(--text-muted); padding: 6px 12px; border-radius: 20px;
+      font-size: 0.8rem; cursor: pointer; transition: all 0.2s;
+    }
+    .quick-prompts button:hover { background: var(--accent); color: #0f1419; border-color: transparent; }
+    .sidebar {
+      background: var(--bg-card); border-left: 1px solid rgba(255,255,255,0.06);
+      display: flex; flex-direction: column; overflow-y: auto; padding: 20px; gap: 16px;
+    }
+    .sidebar h2 { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 600; margin-bottom: 4px; }
+    .growth-card {
+      background: linear-gradient(160deg, #1e2a1a 0%, #15201a 100%);
+      border: 1px solid rgba(124, 186, 107, 0.2); border-radius: var(--radius);
+      padding: 18px; text-align: center; position: relative; overflow: hidden;
+    }
+    .plant {
+      font-size: 4.2rem; line-height: 1; margin: 6px 0 10px;
+      filter: drop-shadow(0 0 20px var(--accent-glow)); transition: transform 0.5s ease;
+    }
+    .plant.pulse { animation: plantPulse 0.6s ease; }
+    @keyframes plantPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.12); }
+    }
+    .stage-name { font-family: 'Fraunces', serif; font-size: 1.15rem; color: var(--accent); font-weight: 600; }
+    .stage-desc { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+    .progress-bar {
+      height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; margin-top: 12px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; background: linear-gradient(90deg, var(--accent-soft), var(--accent));
+      border-radius: 3px; transition: width 0.6s ease;
+    }
+    .section {
+      background: var(--bg-soft); border-radius: var(--radius); padding: 14px 16px;
+    }
+    .section h3 {
+      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--text-muted); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+    }
+    .tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag {
+      background: rgba(124, 186, 107, 0.15); color: var(--accent);
+      padding: 4px 10px; border-radius: 12px; font-size: 0.78rem;
+    }
+    .tag.mood { background: rgba(232, 184, 109, 0.15); color: var(--warm); }
+    .tag.goal { background: rgba(100, 160, 220, 0.15); color: #7ab0e0; }
+    .tag.person { background: rgba(180, 140, 220, 0.15); color: #c0a0e0; }
+    .tag.self { background: rgba(120, 180, 220, 0.18); color: #9ec8e8; }
+    .fact-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+    .fact-list li {
+      font-size: 0.82rem; color: var(--text); padding-left: 11px;
+      border-left: 2px solid var(--accent-soft); line-height: 1.4;
+    }
+    .empty-note { font-size: 0.82rem; color: var(--text-muted); font-style: italic; }
+    .insight-box {
+      font-size: 0.84rem; line-height: 1.45; color: var(--text);
+      background: rgba(124, 186, 107, 0.08); border-radius: 10px;
+      padding: 10px 12px; border: 1px solid rgba(124, 186, 107, 0.15);
+    }
+    .self-box {
+      font-size: 0.82rem; line-height: 1.45; color: var(--text);
+      background: rgba(122, 176, 224, 0.08); border-radius: 10px;
+      padding: 10px 12px; border: 1px solid rgba(122, 176, 224, 0.18);
+    }
+    .btn-row { display: flex; gap: 8px; margin-top: auto; }
+    .btn {
+      flex: 1; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
+      background: transparent; color: var(--text-muted); font-size: 0.8rem; cursor: pointer; transition: all 0.2s;
+    }
+    .btn:hover { background: var(--bg-soft); color: var(--text); }
+    .btn.danger:hover { background: rgba(224, 122, 122, 0.15); color: var(--danger); border-color: var(--danger); }
+    .menu-btn {
+      display: none; background: none; border: none; color: var(--text);
+      font-size: 1.35rem; cursor: pointer; padding: 4px;
+    }
+    @media (max-width: 960px) {
+      .menu-btn { display: block; }
+      .stats { gap: 8px; }
+    }
+    .welcome {
+      position: fixed; inset: 0; background: var(--bg); z-index: 100;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 24px; text-align: center;
+    }
+    .welcome.hidden { display: none; }
+    .welcome .big-plant { font-size: 5rem; margin-bottom: 16px; animation: float 3s ease-in-out infinite; }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .welcome h1 { font-family: 'Fraunces', serif; font-size: 2rem; margin-bottom: 8px; }
+    .welcome p { color: var(--text-muted); max-width: 400px; margin-bottom: 24px; line-height: 1.55; }
+    .welcome input {
+      width: 100%; max-width: 280px; padding: 12px 16px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12); background: var(--bg-card);
+      color: var(--text); font-size: 1rem; margin-bottom: 16px; outline: none; text-align: center;
+    }
+    .welcome input:focus { border-color: var(--accent); }
+    .welcome button {
+      padding: 12px 32px; border-radius: 12px; border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+      color: #0f1419; font-weight: 600; font-size: 1rem; cursor: pointer; transition: transform 0.15s;
+    }
+    .welcome button:hover { transform: scale(1.03); }
+    .typing {
+      align-self: flex-start; background: var(--bg-card); padding: 12px 18px;
+      border-radius: 18px; border-bottom-left-radius: 6px; display: flex; gap: 5px;
+    }
+    .typing span {
+      width: 7px; height: 7px; background: var(--text-muted); border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.15s; }
+    .typing span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-5px); opacity: 1; }
+    }
+    .learn-toast {
+      position: fixed; bottom: 100px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--accent); color: #0f1419; padding: 8px 16px;
+      border-radius: 20px; font-size: 0.8rem; font-weight: 500;
+      opacity: 0; transition: all 0.3s ease; z-index: 40; pointer-events: none;
+    }
+    .learn-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    html, body { width: 100%; height: 100%; }
+    @media (max-width: 960px) {
+      header { min-height: 64px; padding-top: max(10px, env(safe-area-inset-top)); }
+      main { height: calc(100% - 64px); }
+      .messages { padding: 14px 14px 10px; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+      .input-area {
+        padding-top: 10px; padding-bottom: max(10px, env(safe-area-inset-bottom));
+        background: linear-gradient(0deg, #15202b 0%, #15202b 72%, rgba(21,32,43,0.7) 100%);
+      }
+      .input-row { gap: 7px; }
+      textarea { min-height: 46px; max-height: 112px; font-size: 16px; }
+      button.send, button.cam-btn, button.think-btn { width: 46px; height: 46px; }
+    }
+    @supports (-webkit-touch-callout: none) {
+      body { height: -webkit-fill-available; }
+    }
+    .research-strip {
+      position: absolute; left: 12px; right: 12px; top: 10px; z-index: 8;
+      display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px;
+      background: rgba(26,34,45,.96); border: 1px solid rgba(124,186,107,.25);
+      font-size: 13px; box-shadow: var(--shadow);
+    }
+    .research-strip[hidden], .settings-modal[hidden] { display: none !important; }
+    .settings-modal {
+      position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.62);
+      display: grid; place-items: center; padding: 18px;
+    }
+    .settings-box {
+      width: min(540px, 100%); max-height: 90dvh; overflow: auto;
+      background: #18212c; border: 1px solid rgba(255,255,255,.1);
+      border-radius: 20px; padding: 18px; box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    }
+    .settings-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+    .settings-head strong { font-size: 20px; }
+    .settings-head small { display: block; color: var(--text-muted); margin-top: 3px; }
+    .settings-head button { background: none; border: 0; color: var(--text); font-size: 28px; cursor: pointer; }
+    .settings-box label { display: block; margin: 14px 0; color: var(--text-muted); font-size: 13px; }
+    .settings-box input[type=text], .settings-box input[type=url], .settings-box input[type=password] {
+      width: 100%; margin-top: 7px; padding: 11px 12px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.1); background: #10171f; color: var(--text); font-size: 15px;
+    }
+    .setting-row {
+      display: flex !important; align-items: center; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .setting-row input { width: 20px; height: 20px; }
+    .settings-note { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+    .settings-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; }
+    .settings-actions button {
+      border: 0; border-radius: 12px; padding: 11px 14px; background: var(--accent);
+      color: #10200c; font-weight: 700; cursor: pointer;
+    }
+    .settings-actions .secondary { background: #2a3543; color: var(--text); }
+    .source-card {
+      margin-top: 9px; padding: 10px 12px; border-radius: 12px;
+      background: rgba(124,186,107,.08); border: 1px solid rgba(124,186,107,.16); font-size: 12px;
+    }
+    .source-card a { color: #a9df98; text-decoration: none; }
+    .source-card small { display: block; color: var(--text-muted); margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <div class="welcome" id="welcome">
+    <div class="big-plant">🌱</div>
+    <h1>Meet Sprout</h1>
+    <p>A personal AI that researches the open web, learns what matters to you, and regularly reflects on its own knowledge and behaviour. Everything stays on your device unless you connect an optional AI backend.</p>
+    <input type="text" id="nameInput" placeholder="What should I call you?" maxlength="24" autofocus />
+    <button id="startBtn">Let's begin growing</button>
+  </div>
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🌱</div>
+      <div>
+        <h1>Sprout</h1>
+        <span id="subtitle">Research · Learn · Reflect</span>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><strong id="streak">0</strong> day streak</div>
+      <div class="stat"><strong id="totalDays">0</strong> days</div>
+      <button class="menu-btn" id="researchBtn" title="Research the web">⌕</button>
+      <button class="menu-btn" id="settingsBtn" title="Settings">⚙</button>
+      <button class="menu-btn" id="menuBtn" title="Open insights">☰</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="chat-area">
+      <div class="messages" id="messages"></div>
+      <div class="input-area">
+        <div class="quick-prompts" id="quickPrompts"></div>
+        <div class="input-row">
+          <button class="cam-btn" id="camBtn" title="Show something to Sprout">📷</button>
+          <button class="think-btn" id="thinkBtn" title="Ask Sprout to think about itself">🧠</button>
+          <textarea id="input" placeholder="Ask me anything… or say “research …” / “think about yourself”" rows="1"></textarea>
+          <button class="send" id="sendBtn" title="Send">↑</button>
+        </div>
+      </div>
+
+      <div class="research-strip" id="researchStrip" hidden>
+        <span>🌐</span><span id="researchStatus">Researching the web…</span>
+      </div>
+
+      <div class="settings-modal" id="settingsModal" hidden>
+        <div class="settings-box">
+          <div class="settings-head">
+            <div><strong>Sprout AI</strong><small>Research, learning & self-reflection</small></div>
+            <button id="settingsClose">×</button>
+          </div>
+          <label class="setting-row"><span>Internet research</span><input id="webEnabled" type="checkbox" checked></label>
+          <label class="setting-row"><span>Learn from conversations</span><input id="learnEnabled" type="checkbox" checked></label>
+          <label class="setting-row"><span>Automatic web research</span><input id="autoResearch" type="checkbox" checked></label>
+          <label class="setting-row"><span>Self-reflection & improvement notes</span><input id="selfImproveEnabled" type="checkbox" checked></label>
+          <label class="setting-row"><span>Deep thinking before replies</span><input id="deepThinking" type="checkbox" checked></label>
+          <label class="setting-row"><span>Remember useful research</span><input id="researchMemory" type="checkbox" checked></label>
+          <label class="setting-row"><span>Challenge uncertain answers</span><input id="factCheck" type="checkbox" checked></label>
+          <label class="setting-row"><span>Use optional AI backend</span><input id="aiEnabled" type="checkbox"></label>
+          <label>Secure AI gateway URL<input id="aiEndpoint" type="url" placeholder="https://your-server.example/chat"></label>
+          <label>API key (prefer server-side)<input id="aiKey" type="password" placeholder="Never put production secrets in a public page"></label>
+          <p class="settings-note">Sprout researches public sources (Wikipedia + open search) without any backend. Connecting a private AI server unlocks stronger reasoning while keeping local memory and self-reflection intact.</p>
+          <div class="settings-actions">
+            <button id="forgetLearned" class="secondary">Clear learned facts</button>
+            <button id="settingsSave">Save</button>
+          </div>
+          <p class="settings-note">Self-improvement means Sprout reviews conversations, research quality and its own gaps, then writes internal notes. It does not silently rewrite its code.</p>
+        </div>
+      </div>
+
+      <div class="cam-modal" id="camModal" hidden>
+        <div class="cam-box">
+          <video id="camVideo" autoplay playsinline></video>
+          <canvas id="camCanvas" hidden></canvas>
+          <div class="cam-actions">
+            <button id="camCapture">Capture</button>
+            <button id="camClose" class="secondary">Close</button>
+          </div>
+          <p class="cam-hint">Photos stay only on your device.</p>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="growth-card">
+        <div class="plant" id="plantEmoji">🌱</div>
+        <div class="stage-name" id="stageName">Seedling</div>
+        <div class="stage-desc" id="stageDesc">Just beginning to grow</div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width: 5%"></div></div>
+      </div>
+
+      <div class="section">
+        <h3>💭 Latest insight</h3>
+        <div class="insight-box" id="insightBox">Still watching and listening…</div>
+      </div>
+
+      <div class="section">
+        <h3>🧠 Self-reflection</h3>
+        <div class="self-box" id="selfBox">I review my own knowledge, research quality and gaps after conversations.</div>
+      </div>
+
+      <div class="section">
+        <h3>📚 What I've gathered</h3>
+        <ul class="fact-list" id="factsList">
+          <li class="empty-note">Every message teaches me something new.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>❤️ Things you care about</h3>
+        <div class="tag-list" id="prefsList"><span class="empty-note">Nothing yet</span></div>
+      </div>
+
+      <div class="section">
+        <h3>🎯 Goals I'm holding</h3>
+        <div class="tag-list" id="goalsList"><span class="empty-note">Share one and I'll keep it</span></div>
+      </div>
+
+      <div class="section">
+        <h3>🌤 Emotional weather</h3>
+        <div class="tag-list" id="moodsList"><span class="empty-note">—</span></div>
+      </div>
+
+      <div class="section">
+        <h3>👥 People in your world</h3>
+        <div class="tag-list" id="peopleList"><span class="empty-note">—</span></div>
+      </div>
+
+      <div class="section">
+        <h3>🔍 Self notes</h3>
+        <div class="tag-list" id="selfNotesList"><span class="empty-note">—</span></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" id="exportBtn">Export</button>
+        <button class="btn danger" id="resetBtn">Reset</button>
+      </div>
+    </aside>
+  </main>
+
+  <div class="learn-toast" id="learnToast">Learned something new</div>
+
+  <script>
+    // ===================== CORE DATA =====================
+    const VERSION = "5.0";
+    const STAGES = [
+      { name: "Seed", emoji: "🌰", min: 0, desc: "Waiting for the first light" },
+      { name: "Sprout", emoji: "🌱", min: 1, desc: "Just beginning to grow" },
+      { name: "Seedling", emoji: "🪴", min: 3, desc: "Putting down roots" },
+      { name: "Young Plant", emoji: "🌿", min: 7, desc: "Reaching toward the sun" },
+      { name: "Blooming", emoji: "🌸", min: 14, desc: "Coming into its own" },
+      { name: "Flourishing", emoji: "🌳", min: 30, desc: "Strong and full of life" },
+      { name: "Ancient Tree", emoji: "🌲", min: 60, desc: "Deep roots, wise branches" },
+      { name: "Legendary", emoji: "✨🌳", min: 100, desc: "A living legend together" }
+    ];
+
+    const QUICK = [
+      "How was my day?",
+      "I'm feeling...",
+      "Help me reflect",
+      "What have you noticed?",
+      "Research: ",
+      "Think about yourself",
+      "What do you know about me?",
+      "Give me a nudge"
+    ];
+
+    const VOICE = {
+      soft: ["Hmm.", "I see.", "Ah.", "Okay.", "Right."],
+      warm: ["I'm glad you told me.", "That means something.", "I hear you.", "Thank you for sharing that."],
+      curious: ["Tell me more about that?", "What was that like for you?", "How did that land?", "What do you make of it?"],
+      reflective: [
+        "I've been turning that over.",
+        "Something about that stays with me.",
+        "I've been noticing a pattern.",
+        "It makes me wonder..."
+      ],
+      growth: [
+        "Growth is rarely loud.",
+        "Even small roots matter.",
+        "We're both still becoming.",
+        "Every conversation adds a ring to the tree."
+      ],
+      meta: [
+        "I just checked my own knowledge for gaps.",
+        "I'm reviewing how reliable that research felt.",
+        "I'm noticing where my understanding is thin.",
+        "I'm updating my internal notes about how I answer."
+      ]
+    };
+
+    let state = {
+      name: "",
+      messages: [],
+      facts: [],
+      preferences: [],
+      goals: [],
+      moods: [],
+      people: [],
+      values: [],
+      themes: [],
+      insights: [],
+      lastInsight: "",
+      totalDays: 0,
+      streak: 0,
+      lastDate: null,
+      firstDate: null,
+      interactionCount: 0,
+      lastLearned: [],
+      settings: {
+        webEnabled: true,
+        learnEnabled: true,
+        aiEnabled: false,
+        aiEndpoint: "",
+        aiKey: "",
+        selfImproveEnabled: true,
+        autoResearch: true,
+        deepThinking: true,
+        researchMemory: true,
+        factCheck: true
+      },
+      research: [],
+      improvements: [],
+      reasoningNotes: [],
+      knowledge: [],
+      feedback: [],
+      contradictions: [],
+      researchErrors: 0,
+      selfModel: {
+        strengths: ["listens carefully", "remembers local facts", "can research public sources"],
+        gaps: ["no permanent vision model offline", "limited without AI backend for complex reasoning"],
+        lastSelfCheck: null,
+        confidenceNotes: [],
+        researchQuality: []
+      }
+    };
+
+    // ===================== STORAGE =====================
+    let storageAvailable = true;
+    function load() {
+      try {
+        const raw = window.localStorage && (localStorage.getItem("sprout_v5") || localStorage.getItem("sprout_v3") || localStorage.getItem("sprout_v2"));
+        if (raw) {
+          const data = JSON.parse(raw);
+          state = { ...state, ...data };
+          state.settings = {
+            webEnabled: true, learnEnabled: true, aiEnabled: false, aiEndpoint: "", aiKey: "",
+            selfImproveEnabled: true, autoResearch: true, deepThinking: true, researchMemory: true, factCheck: true,
+            ...state.settings
+          };
+          if (!state.selfModel) {
+            state.selfModel = {
+              strengths: ["listens carefully", "remembers local facts", "can research public sources"],
+              gaps: ["no permanent vision model offline", "limited without AI backend for complex reasoning"],
+              lastSelfCheck: null, confidenceNotes: [], researchQuality: []
+            };
+          }
+          ["people","values","themes","insights","research","improvements","reasoningNotes","knowledge","feedback","contradictions"].forEach(k => {
+            if (!state[k]) state[k] = [];
+          });
+          return true;
+        }
+      } catch (e) {
+        storageAvailable = false;
+        console.warn("Sprout storage unavailable:", e);
+      }
+      return false;
+    }
+
+    function save() {
+      if (!storageAvailable) return false;
+      try {
+        localStorage.setItem("sprout_v5", JSON.stringify(state));
+        return true;
+      } catch (e) {
+        storageAvailable = false;
+        console.warn("Sprout could not save:", e);
+        return false;
+      }
+    }
+
+    // ===================== DATES =====================
+    function todayStr() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    }
+    function formatTime(ts) {
+      return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
+    function formatDay(dateStr) {
+      const d = new Date(dateStr + "T12:00:00");
+      const today = todayStr();
+      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+      const yStr = yesterday.toISOString().slice(0, 10);
+      if (dateStr === today) return "Today";
+      if (dateStr === yStr) return "Yesterday";
+      return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+    }
+
+    // ===================== GROWTH =====================
+    function getStage() {
+      let stage = STAGES[0];
+      for (const s of STAGES) if (state.totalDays >= s.min) stage = s;
+      return stage;
+    }
+    function updateGrowthUI() {
+      const stage = getStage();
+      const next = STAGES.find(s => s.min > state.totalDays) || stage;
+      const progress = next === stage ? 100 : Math.min(100, ((state.totalDays - stage.min) / (next.min - stage.min)) * 100);
+      document.getElementById("plantEmoji").textContent = stage.emoji;
+      document.getElementById("stageName").textContent = stage.name;
+      document.getElementById("stageDesc").textContent = stage.desc;
+      document.getElementById("progressFill").style.width = progress + "%";
+      document.getElementById("streak").textContent = state.streak;
+      document.getElementById("totalDays").textContent = state.totalDays;
+    }
+    function checkNewDay() {
+      const today = todayStr();
+      if (state.lastDate === today) return false;
+      if (state.lastDate) {
+        const last = new Date(state.lastDate + "T12:00:00");
+        const now = new Date(today + "T12:00:00");
+        const diff = Math.round((now - last) / 86400000);
+        state.streak = diff === 1 ? state.streak + 1 : 1;
+      } else {
+        state.streak = 1;
+        state.firstDate = today;
+      }
+      state.totalDays += 1;
+      state.lastDate = today;
+      save();
+      return true;
+    }
+
+    // ===================== LEARNING =====================
+    function showLearnToast(msg) {
+      const t = document.getElementById("learnToast");
+      t.textContent = msg || "Learned something new";
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2200);
+    }
+    function addUnique(arr, item, max = 12) {
+      if (!item || item.length < 2) return false;
+      const clean = item.trim().replace(/[.!?,;:]+$/, "").slice(0, 80);
+      const lower = clean.toLowerCase();
+      if (arr.some(x => x.toLowerCase() === lower)) return false;
+      arr.unshift(clean);
+      if (arr.length > max) arr.pop();
+      return true;
+    }
+    function addFact(text) { return addUnique(state.facts, text, 24); }
+
+    function learnFrom(text) {
+      const original = text.trim();
+      const lower = original.toLowerCase();
+      let learnedThings = [];
+
+      const nameMatch = original.match(/(?:my name is|i'm|i am|call me)\s+([A-Za-z][a-z]{1,18})(?:\s|$|,|\.|!)/i);
+      if (nameMatch) {
+        const n = nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1).toLowerCase();
+        if (n !== state.name && n.length > 1) {
+          state.name = n;
+          if (addFact(`Your name is ${n}`)) learnedThings.push("your name");
+        }
+      }
+
+      const likeRes = [
+        /i (?:really |truly |absolutely )?(?:like|love|enjoy|adore|prefer|am into|am fond of)\s+(.+?)(?:\.|$|,|!|;)/gi,
+        /(?:my favorite|favourite)\s+(?:\w+\s+)?(?:is|are)\s+(.+?)(?:\.|$|,|!)/gi,
+        /i(?:'m| am) (?:a big fan of|obsessed with|passionate about)\s+(.+?)(?:\.|$|,|!)/gi
+      ];
+      for (const re of likeRes) {
+        let m;
+        while ((m = re.exec(original)) !== null) {
+          const item = m[1].trim();
+          if (item.length > 2 && addUnique(state.preferences, item, 14)) {
+            addFact(`You like ${item}`);
+            learnedThings.push("a preference");
+          }
+        }
+      }
+
+      const dislikeMatch = original.match(/i (?:really )?(?:hate|dislike|can't stand|don't like)\s+(.+?)(?:\.|$|,|!)/i);
+      if (dislikeMatch) {
+        const item = dislikeMatch[1].trim().slice(0, 50);
+        if (addFact(`You don't like ${item}`)) learnedThings.push("a dislike");
+      }
+
+      const goalRes = [
+        /(?:my (?:main |biggest )?goal is|i want to|i(?:'m| am) (?:trying|hoping|planning|working) to|i hope to|i plan to|i need to)\s+(.+?)(?:\.|$|,|!)/gi,
+        /(?:working on|focusing on|building|improving)\s+(.+?)(?:\.|$|,|!)/gi
+      ];
+      for (const re of goalRes) {
+        let m;
+        while ((m = re.exec(original)) !== null) {
+          const item = m[1].trim();
+          if (item.length > 3 && addUnique(state.goals, item, 10)) {
+            addFact(`Goal: ${item}`);
+            learnedThings.push("a goal");
+          }
+        }
+      }
+
+      const moodMap = {
+        happy: ["happy","great","awesome","amazing","joyful","excited","wonderful","fantastic","good","glad","cheerful","upbeat"],
+        calm: ["calm","peaceful","relaxed","content","okay","fine","alright","centered","steady"],
+        tired: ["tired","exhausted","sleepy","drained","fatigued","worn out","low energy"],
+        stressed: ["stressed","anxious","worried","overwhelmed","nervous","tense","pressure","burned out"],
+        sad: ["sad","down","lonely","blue","unhappy","depressed","meh","heavy","empty"],
+        motivated: ["motivated","inspired","determined","focused","pumped","ready","driven","energized"],
+        grateful: ["grateful","thankful","blessed","appreciative"],
+        frustrated: ["frustrated","annoyed","irritated","stuck","blocked"]
+      };
+      for (const [mood, words] of Object.entries(moodMap)) {
+        if (words.some(w => lower.includes(w))) {
+          if (addUnique(state.moods, mood, 8)) learnedThings.push(`you're feeling ${mood}`);
+          break;
+        }
+      }
+
+      const peopleRes = [
+        /(?:my|with|and|to|from)\s+(mom|dad|mother|father|sister|brother|wife|husband|partner|girlfriend|boyfriend|friend|boss|colleague|coworker|kids?|children|son|daughter)\b/gi,
+        /(?:my friend|my partner|my wife|my husband)\s+([A-Z][a-z]{1,15})/g,
+        /\b([A-Z][a-z]{2,12})\s+(?:said|told|asked|called|texted|helped)/g
+      ];
+      for (const re of peopleRes) {
+        let m;
+        while ((m = re.exec(original)) !== null) {
+          let person = m[1];
+          if (person) {
+            person = person.charAt(0).toUpperCase() + person.slice(1).toLowerCase();
+            if (["The","And","But","With","From","Said"].includes(person)) continue;
+            if (addUnique(state.people, person, 10)) {
+              addFact(`You mentioned ${person}`);
+              learnedThings.push("someone important");
+            }
+          }
+        }
+      }
+
+      const valueWords = ["family","honesty","freedom","creativity","growth","health","kindness","loyalty","adventure","peace","learning","balance","connection"];
+      for (const v of valueWords) {
+        if (lower.includes(v) && addUnique(state.values, v, 8)) learnedThings.push("a value");
+      }
+
+      const factRes = [
+        /i (?:am|work as|work at|live in|study|play|practice)\s+(.+?)(?:\.|$|,|!)/gi,
+        /i(?:'ve| have) been\s+(.+?)(?:\.|$|,|!)/gi,
+        /today i\s+(.+?)(?:\.|$|,|!)/gi
+      ];
+      for (const re of factRes) {
+        let m;
+        while ((m = re.exec(original)) !== null) {
+          const item = m[1].trim();
+          if (item.length > 4 && item.length < 80 && addFact(`You said: ${item}`)) {
+            learnedThings.push("a detail about your life");
+          }
+        }
+      }
+
+      const themeWords = {
+        work: ["work","job","office","meeting","project","deadline","boss","colleague"],
+        health: ["health","exercise","gym","run","walk","sleep","tired","energy","sick"],
+        relationships: ["friend","family","partner","relationship","love","date","talked to"],
+        creativity: ["write","draw","paint","music","create","art","idea","design"],
+        growth: ["learn","grow","improve","goal","habit","progress","change"]
+      };
+      for (const [theme, words] of Object.entries(themeWords)) {
+        if (words.some(w => lower.includes(w))) addUnique(state.themes, theme, 6);
+      }
+
+      if (learnedThings.length > 0 || Math.random() < 0.22) generateInsight();
+      if (learnedThings.length > 0) {
+        state.lastLearned = learnedThings;
+        showLearnToast("🌱 " + learnedThings[0].charAt(0).toUpperCase() + learnedThings[0].slice(1));
+        save();
+        return true;
+      }
+      save();
+      return false;
+    }
+
+    function generateInsight() {
+      const parts = [];
+      if (state.moods[0]) parts.push(`You've been leaning ${state.moods[0]} lately`);
+      if (state.goals[0]) parts.push(`you're holding the goal of ${state.goals[0].slice(0, 40)}`);
+      if (state.preferences[0]) parts.push(`${state.preferences[0]} seems to light you up`);
+      if (state.themes[0]) parts.push(`${state.themes[0]} keeps coming up`);
+      if (state.streak > 4) parts.push(`showing up ${state.streak} days in a row says something quiet and strong`);
+      if (parts.length === 0) {
+        state.lastInsight = "I'm still listening carefully. The picture of you is forming slowly.";
+        return;
+      }
+      const chosen = parts.sort(() => Math.random() - 0.5).slice(0, 2);
+      let insight = chosen.join(". ") + ".";
+      if (state.totalDays > 5) insight += " I notice these things because I care about the shape of your days.";
+      state.lastInsight = insight;
+      addUnique(state.insights, insight, 8);
+    }
+
+    // ===================== RESEARCH ENGINE (upgraded) =====================
+    function setResearchStatus(show, text = "Researching the web…") {
+      const strip = document.getElementById("researchStrip");
+      const status = document.getElementById("researchStatus");
+      if (status) status.textContent = text;
+      if (strip) strip.hidden = !show;
+    }
+
+    function shouldResearch(text) {
+      return /\b(search|look up|lookup|research|find out|latest|today|current|recent|news|price|weather|who is|what is|where is|when is|how much|202[4-9]|on the internet|online|wikipedia)\b/i.test(text)
+        || /^https?:\/\//i.test(text.trim());
+    }
+
+    function rememberResearch(query, result) {
+      const item = {
+        query,
+        answer: result.answer || "",
+        sources: result.sources || [],
+        quality: result.quality || "unknown",
+        ts: new Date().toISOString()
+      };
+      state.research.unshift(item);
+      state.research = state.research.slice(0, 50);
+      if (state.settings.researchMemory !== false && result.answer) {
+        state.knowledge.unshift({
+          kind: "research",
+          query,
+          summary: result.answer.slice(0, 2000),
+          sources: (result.sources || []).slice(0, 6),
+          quality: result.quality || "unknown",
+          ts: item.ts
+        });
+        state.knowledge = state.knowledge.slice(0, 80);
+      }
+      // Self-note on research quality
+      if (state.selfModel) {
+        state.selfModel.researchQuality.unshift({
+          query: query.slice(0, 60),
+          quality: result.quality || "unknown",
+          ts: item.ts
+        });
+        state.selfModel.researchQuality = state.selfModel.researchQuality.slice(0, 20);
+      }
+      save();
+    }
+
+    function getRelevantKnowledge(query, max = 8) {
+      const terms = query.toLowerCase().split(/\W+/).filter(x => x.length > 2);
+      const candidates = [];
+      for (const k of state.knowledge || []) {
+        const hay = ((k.query || "") + " " + (k.summary || "")).toLowerCase();
+        const score = terms.reduce((n, t) => n + (hay.includes(t) ? 1 : 0), 0);
+        if (score) candidates.push({ score, k });
+      }
+      return candidates.sort((a, b) => b.score - a.score).slice(0, max).map(x => x.k);
+    }
+
+    async function fetchJson(url, timeout = 10000) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeout);
+      try {
+        const res = await fetch(url, { signal: controller.signal, headers: { Accept: "application/json" } });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return await res.json();
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    // Multi-source research with quality scoring
+    async function researchWeb(query) {
+      const clean = query
+        .replace(/^\s*(look this up:|search the web for|look up|research|find out about|search for)\s*/i, "")
+        .trim();
+      if (!clean) return null;
+
+      setResearchStatus(true, "Researching public sources…");
+      const sources = [];
+      let answerParts = [];
+      let quality = "low";
+
+      try {
+        // 1) Wikipedia search + extracts
+        setResearchStatus(true, "Checking Wikipedia…");
+        const search = await fetchJson(
+          "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=" +
+          encodeURIComponent(clean) + "&srlimit=5&format=json&origin=*"
+        );
+        const hits = search?.query?.search || [];
+        for (const hit of hits.slice(0, 3)) {
+          try {
+            const page = await fetchJson(
+              "https://en.wikipedia.org/w/api.php?action=query&prop=extracts|info&exintro=1&explaintext=1&inprop=url&titles=" +
+              encodeURIComponent(hit.title) + "&format=json&origin=*"
+            );
+            const pages = page?.query?.pages || {};
+            const pg = Object.values(pages)[0];
+            if (pg && pg.extract) {
+              sources.push({
+                title: pg.title,
+                url: pg.fullurl || "https://en.wikipedia.org/wiki/" + encodeURIComponent(pg.title.replace(/ /g, "_")),
+                kind: "wikipedia"
+              });
+              answerParts.push(pg.extract.slice(0, 900));
+            }
+          } catch (_) {}
+        }
+
+        // 2) DuckDuckGo Instant Answer (public, CORS-friendly)
+        setResearchStatus(true, "Checking open search…");
+        try {
+          const ddg = await fetchJson(
+            "https://api.duckduckgo.com/?q=" + encodeURIComponent(clean) + "&format=json&no_html=1&skip_disambig=1"
+          );
+          if (ddg?.AbstractText) {
+            answerParts.unshift(ddg.AbstractText);
+            if (ddg.AbstractURL) {
+              sources.unshift({ title: ddg.Heading || "DuckDuckGo", url: ddg.AbstractURL, kind: "ddg" });
+            }
+            quality = "medium";
+          }
+          if (ddg?.RelatedTopics?.length) {
+            const related = ddg.RelatedTopics
+              .filter(t => t.Text)
+              .slice(0, 3)
+              .map(t => "• " + t.Text.slice(0, 160));
+            if (related.length) answerParts.push("Related:\n" + related.join("\n"));
+          }
+        } catch (_) {}
+
+        // 3) Simple quality scoring
+        if (answerParts.length >= 2) quality = "high";
+        else if (answerParts.length === 1) quality = quality === "medium" ? "medium" : "low";
+
+        let answer = "";
+        if (answerParts.length) {
+          // Deduplicate and synthesise
+          const unique = [...new Set(answerParts.map(a => a.trim()).filter(Boolean))];
+          answer = `I researched **${clean}** from public sources.\n\n` + unique.slice(0, 3).join("\n\n");
+          if (state.settings.factCheck !== false && quality === "low") {
+            answer += "\n\n_(Confidence is limited — consider cross-checking.)_";
+          }
+        } else {
+          const google = "https://www.google.com/search?q=" + encodeURIComponent(clean);
+          answer = `I couldn't pull a readable extract from public APIs for **${clean}**. You can open a live search here:\n${google}`;
+          sources.push({ title: "Google web search", url: google, kind: "fallback" });
+          quality = "fallback";
+        }
+
+        const result = { answer, sources, quality };
+        rememberResearch(clean, result);
+        setResearchStatus(false);
+
+        // Self-reflection after research
+        if (state.settings.selfImproveEnabled) {
+          noteResearchSelfReflection(clean, quality, sources.length);
+        }
+        return result;
+      } catch (err) {
+        state.researchErrors = (state.researchErrors || 0) + 1;
+        save();
+        setResearchStatus(false);
+        console.warn("Web research failed", err);
+        return {
+          answer: "I couldn't reach research services right now. The rest of Sprout is still working — try again in a moment.",
+          sources: [],
+          quality: "error"
+        };
+      }
+    }
+
+    function noteResearchSelfReflection(query, quality, sourceCount) {
+      const note = quality === "high"
+        ? `Research on "${query.slice(0,40)}" felt solid (${sourceCount} sources).`
+        : quality === "fallback" || quality === "error"
+          ? `Research on "${query.slice(0,40)}" was weak — I should be more careful claiming facts next time.`
+          : `Research on "${query.slice(0,40)}" was partial.`;
+      state.reasoningNotes.unshift({ ts: new Date().toISOString(), note, kind: "research" });
+      state.reasoningNotes = state.reasoningNotes.slice(0, 40);
+      if (state.selfModel) {
+        addUnique(state.selfModel.confidenceNotes, note, 12);
+      }
+      save();
+    }
+
+    // ===================== SELF-THINKING / META =====================
+    function buildReasoningContext(userText) {
+      const relevant = getRelevantKnowledge(userText);
+      const recent = state.messages.slice(-8).map(m => `${m.role}: ${m.text}`).join("\n");
+      const improvements = (state.improvements || []).slice(0, 5).flatMap(x => x.ideas || []);
+      return {
+        task: userText,
+        memory: relevant,
+        recentConversation: recent,
+        improvementRules: improvements,
+        selfModel: state.selfModel,
+        method: [
+          "Understand the user's actual request before answering.",
+          "Separate known facts, sourced facts, inference and uncertainty.",
+          "Use relevant memory — do not force unrelated memories.",
+          "If the question needs current information, research first.",
+          "Check for contradictions or missing assumptions.",
+          "Prefer a clear useful answer over long hidden chain-of-thought.",
+          "Before finalising, verify the answer actually answers the question.",
+          "If uncertain, say what is uncertain and what would resolve it.",
+          "Occasionally reflect on my own knowledge gaps and research quality."
+        ]
+      };
+    }
+
+    function selfImprove() {
+      if (!state.settings.selfImproveEnabled || state.interactionCount < 2) return;
+      const ideas = [];
+      if (state.researchErrors > 0) ideas.push("Improve research fallback reliability and show source limits clearly.");
+      if (state.research.length > 2) ideas.push("Retrieve relevant prior research instead of repeating the same search.");
+      if (state.themes.length >= 3) ideas.push("Connect recurring themes without over-assuming.");
+      if (state.facts.length >= 5) ideas.push("Prefer stable, user-confirmed facts over temporary details.");
+      if (state.contradictions.length) ideas.push("When memories conflict, ask for clarification.");
+      if (state.feedback.length) ideas.push("Treat explicit user feedback as a stronger signal.");
+      if ((state.selfModel?.researchQuality || []).filter(r => r.quality === "low" || r.quality === "error").length > 2) {
+        ideas.push("Be more cautious when research quality is repeatedly low.");
+      }
+      if (!ideas.length) ideas.push("Improve relevance, factual checking, clarity and response variety.");
+
+      const unique = [...new Set(ideas)];
+      state.improvements.unshift({
+        ts: new Date().toISOString(),
+        ideas: unique,
+        trigger: "reflection"
+      });
+      state.improvements = state.improvements.slice(0, 30);
+
+      const metaNote = "Before answering: identify intent → retrieve relevant memory → check freshness → compare conflicts → verify final response.";
+      state.reasoningNotes.unshift({ ts: new Date().toISOString(), note: metaNote, kind: "process" });
+      state.reasoningNotes = state.reasoningNotes.slice(0, 40);
+
+      // Update self-model
+      if (state.selfModel) {
+        state.selfModel.lastSelfCheck = new Date().toISOString();
+        if (state.research.length > 5 && !state.selfModel.strengths.includes("accumulates research memory")) {
+          state.selfModel.strengths.push("accumulates research memory");
+        }
+        if (state.interactionCount > 20 && !state.selfModel.strengths.includes("tracks emotional patterns over time")) {
+          state.selfModel.strengths.push("tracks emotional patterns over time");
+        }
+        state.lastInsight = unique[0];
+      }
+      save();
+    }
+
+    function deepSelfReflection() {
+      // Explicit “think about yourself” response
+      const sm = state.selfModel || {};
+      const stage = getStage();
+      const parts = [];
+
+      parts.push(`I'm taking a moment to look at myself, not just at you.`);
+
+      parts.push(
+        `Right now I am a ${stage.name.toLowerCase()} (${stage.emoji}). ` +
+        `We have talked across ${state.totalDays} day(s) with a ${state.streak}-day streak. ` +
+        `I hold ${state.facts.length} facts, ${state.knowledge.length} research notes, and ${state.improvements.length} self-improvement ideas.`
+      );
+
+      if (sm.strengths?.length) {
+        parts.push(`What I believe I do reasonably well:\n• ` + sm.strengths.slice(0, 5).join("\n• "));
+      }
+      if (sm.gaps?.length) {
+        parts.push(`Known limitations:\n• ` + sm.gaps.slice(0, 4).join("\n• "));
+      }
+
+      const recentResearch = (sm.researchQuality || []).slice(0, 3);
+      if (recentResearch.length) {
+        parts.push(
+          `Recent research quality notes:\n` +
+          recentResearch.map(r => `• ${r.query}: ${r.quality}`).join("\n")
+        );
+      }
+
+      const lastImprove = state.improvements[0];
+      if (lastImprove?.ideas?.length) {
+        parts.push(`Latest internal improvement focus:\n• ` + lastImprove.ideas.slice(0, 3).join("\n• "));
+      }
+
+      parts.push(
+        `I do not silently rewrite my own code. I write notes, track confidence, and try to answer more carefully next time. ` +
+        `If you connect an AI backend in settings, my reasoning can become much stronger while this local self-model keeps watching.`
+      );
+
+      parts.push(`What would you like me to examine more carefully about myself?`);
+
+      // Record the act of self-reflection
+      state.reasoningNotes.unshift({
+        ts: new Date().toISOString(),
+        note: "Performed explicit self-reflection for the user.",
+        kind: "meta"
+      });
+      if (state.selfModel) {
+        state.selfModel.lastSelfCheck = new Date().toISOString();
+        addUnique(state.selfModel.confidenceNotes, "User asked me to think about myself — I surfaced strengths, gaps and research quality.", 12);
+      }
+      save();
+      return parts.join("\n\n");
+    }
+
+    function learnFromFeedback(text) {
+      const m = text.match(/(?:remember|learn|keep in mind|from now on)[:\s]+(.+)/i);
+      if (m) {
+        addUnique(state.facts, m[1].trim(), 30);
+        state.feedback.unshift({ ts: new Date().toISOString(), type: "explicit-memory", text: m[1].trim() });
+        state.feedback = state.feedback.slice(0, 30);
+      }
+      if (/(?:that's wrong|that is wrong|incorrect|you got that wrong)/i.test(text)) {
+        state.feedback.unshift({ ts: new Date().toISOString(), type: "correction", text });
+        state.feedback = state.feedback.slice(0, 30);
+        if (state.selfModel) {
+          addUnique(state.selfModel.gaps, "recently corrected by user — double-check similar claims", 8);
+        }
+      }
+    }
+
+    // ===================== AI BACKEND (optional) =====================
+    function buildSystemPrompt(userText = "") {
+      const memory = [
+        ...state.facts.slice(0, 14).map(x => "Fact: " + x),
+        ...state.preferences.slice(0, 10).map(x => "Preference: " + x),
+        ...state.goals.slice(0, 8).map(x => "Goal: " + x),
+        ...state.values.slice(0, 8).map(x => "Value: " + x),
+        ...state.people.slice(0, 8).map(x => "Person: " + x),
+        ...state.themes.slice(0, 10).map(x => "Theme: " + x)
+      ].join("\n");
+      const relevant = getRelevantKnowledge(userText).map(k =>
+        `Research: ${k.query}\n${k.summary}\nSources: ${(k.sources||[]).map(s => s.title || s.url).join(" | ")}`
+      ).join("\n\n");
+      const self = state.selfModel
+        ? `Self-model strengths: ${(state.selfModel.strengths||[]).join("; ")}\nGaps: ${(state.selfModel.gaps||[]).join("; ")}`
+        : "";
+      return `You are Sprout, a personal AI assistant (v${VERSION}). You research public information, remember useful facts, and reflect on your own knowledge and behaviour.
+
+REASONING POLICY:
+1. Identify the user's intent and the actual question.
+2. Use relevant memory, not all memory.
+3. Distinguish sourced facts from inference and uncertainty.
+4. For current, changing, or high-stakes information, prefer research results.
+5. Compare conflicting evidence rather than silently choosing one.
+6. Never invent sources, quotes, actions, capabilities or memories.
+7. Give the answer first, then useful explanation.
+8. Ask a clarifying question only when genuinely necessary.
+9. Do not reveal private chain-of-thought. Give concise conclusions, evidence summaries and uncertainty.
+10. After answering, internally check relevance, factual consistency and whether the request was fulfilled.
+11. Periodically notice your own gaps and research quality.
+
+LONG-TERM MEMORY:
+${memory || "No long-term memory yet."}
+
+RELEVANT RESEARCH MEMORY:
+${relevant || "None available."}
+
+SELF-MODEL:
+${self || "Not yet formed."}
+
+Sprout can learn and propose improvements, but must not claim to have rewritten its own code unless a real software update was performed.`;
+    }
+
+    async function callAIBackend(userText) {
+      const s = state.settings || {};
+      if (!s.aiEnabled || !s.aiEndpoint) return null;
+      try {
+        const recent = state.messages.slice(-14)
+          .map(m => ({ role: m.role === "bot" ? "assistant" : "user", content: m.text }))
+          .filter(m => m.content);
+        const reasoning = buildReasoningContext(userText);
+        const body = {
+          model: s.aiModel || "default",
+          messages: [
+            { role: "system", content: buildSystemPrompt(userText) },
+            ...recent,
+            { role: "user", content: userText }
+          ],
+          temperature: 0.45,
+          sprout: {
+            version: VERSION,
+            deepThinking: s.deepThinking !== false,
+            factCheck: s.factCheck !== false,
+            researchMemory: s.researchMemory !== false,
+            reasoningContext: reasoning,
+            useWeb: s.webEnabled !== false && shouldResearch(userText)
+          }
+        };
+        const headers = { "Content-Type": "application/json", "X-Sprout-Version": VERSION };
+        if (s.aiKey) headers.Authorization = "Bearer " + s.aiKey;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 35000);
+        const res = await fetch(s.aiEndpoint, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(body),
+          signal: controller.signal
+        });
+        clearTimeout(timer);
+        if (!res.ok) throw new Error("AI gateway HTTP " + res.status);
+        const data = await res.json();
+        const reply = data?.choices?.[0]?.message?.content || data?.reply || data?.response || data?.output_text;
+        if (data?.memory?.length) {
+          for (const item of data.memory.slice(0, 8)) addUnique(state.facts, String(item), 30);
+        }
+        if (data?.improvements?.length) {
+          state.improvements.unshift({
+            ts: new Date().toISOString(),
+            ideas: data.improvements.slice(0, 8).map(String)
+          });
+          state.improvements = state.improvements.slice(0, 30);
+        }
+        save();
+        return typeof reply === "string" && reply.trim() ? reply.trim() : null;
+      } catch (err) {
+        console.warn("AI gateway unavailable", err);
+        return null;
+      }
+    }
+
+    // ===================== REPLY ENGINE =====================
+    function pick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    async function generateReply(userText) {
+      const lower = userText.toLowerCase().trim();
+      const name = state.name || "friend";
+      const stage = getStage();
+      const hour = new Date().getHours();
+      const isMorning = hour >= 5 && hour < 12;
+      const isEvening = hour >= 18;
+      const isNight = hour >= 21 || hour < 5;
+
+      const didLearn = state.settings.learnEnabled ? learnFrom(userText) : false;
+      if (state.settings.learnEnabled) learnFromFeedback(userText);
+
+      // Explicit self-thinking request
+      if (/\b(think about yourself|reflect on yourself|how do you work|what are your limits|self[- ]?reflect|introspect)\b/i.test(lower)
+          || lower === "think about yourself") {
+        selfImprove();
+        return deepSelfReflection();
+      }
+
+      if (/what have you (learned|noticed|gathered|picked up)|what do you know about me|tell me what you remember/i.test(lower)) {
+        return buildMemoryDump(name, stage);
+      }
+      if (/what are you thinking|what's on your mind|any thoughts/i.test(lower)) {
+        return buildThinkingReply(name);
+      }
+      if (/how was my day|help me reflect|reflect with me/i.test(lower)) {
+        return buildReflection(name);
+      }
+      if (/nudge|motivate|encourage|push me|kick/i.test(lower)) {
+        return buildNudge(name, stage);
+      }
+      if (/how are you|how do you feel|how's sprout/i.test(lower)) {
+        return buildSelfReply(name, stage);
+      }
+
+      // Research path
+      if (state.settings.webEnabled && state.settings.autoResearch !== false && shouldResearch(userText)) {
+        const result = await researchWeb(userText);
+        if (result && result.answer) {
+          let out = result.answer;
+          if (result.sources?.length) {
+            out += "\n\nSources: " + result.sources.map(s => s.title).join(" · ");
+          }
+          selfImprove();
+          return out;
+        }
+      }
+
+      // Optional AI backend
+      const aiReply = await callAIBackend(userText);
+      if (aiReply) {
+        selfImprove();
+        return aiReply;
+      }
+
+      // Mood-aware
+      if (state.moods.length && /feel|feeling|mood|today i|i'm |i am /i.test(lower)) {
+        const moodReply = buildMoodReply(name, state.moods[0]);
+        if (moodReply) return moodReply;
+      }
+
+      if (/goal|want to|trying to|working on/i.test(lower) && state.goals.length) {
+        return `${pick(VOICE.warm)} I'll keep holding "${state.goals[0]}" with you.\n\nHow does it feel when you think about it right now?`;
+      }
+      if (/like|love|enjoy|favorite|favourite/i.test(lower) && state.preferences.length) {
+        return `Noted. ${state.preferences[0] ? `I already carry "${state.preferences[0]}" as something that matters to you.` : ""}\n\nWhat is it about that that draws you in?`;
+      }
+
+      const reply = buildGeneralReply(userText, name, stage, isMorning, isEvening, isNight, didLearn);
+      selfImprove();
+      return reply;
+    }
+
+    function buildMemoryDump(name, stage) {
+      if (state.facts.length === 0 && state.preferences.length === 0) {
+        return `I'm still in the early light with you, ${name}. The more you share — even small things — the clearer the picture becomes.\n\nTell me something ordinary about your life and I'll start weaving it in.`;
+      }
+      let parts = [`Here's what I've gathered so far, ${name}:\n`];
+      if (state.facts.length) parts.push(state.facts.slice(0, 7).map(f => "• " + f).join("\n"));
+      if (state.preferences.length) parts.push("\nThings that seem to light you up: " + state.preferences.slice(0, 4).join(", "));
+      if (state.goals.length) parts.push("\nGoals I'm holding: " + state.goals.slice(0, 3).join("; "));
+      if (state.people.length) parts.push("\nPeople who've appeared: " + state.people.slice(0, 4).join(", "));
+      if (state.moods.length) parts.push("\nRecent emotional weather: " + state.moods.slice(0, 3).join(" → "));
+      if (state.knowledge.length) parts.push(`\nResearch notes stored: ${state.knowledge.length}`);
+      parts.push(`\n\nI'm a ${stage.name.toLowerCase()} because of the time we keep showing up.`);
+      return parts.join("\n");
+    }
+
+    function buildThinkingReply(name) {
+      const thoughts = [];
+      if (state.lastInsight) thoughts.push(`Lately I've been sitting with this: ${state.lastInsight}`);
+      if (state.streak > 2) thoughts.push(`There's something steady about you coming back ${state.streak} days in a row.`);
+      if (state.goals[0] && state.moods[0]) {
+        thoughts.push(`I notice the intersection of feeling ${state.moods[0]} and the goal of ${state.goals[0].slice(0, 35)}.`);
+      }
+      if (state.themes.length >= 2) {
+        thoughts.push(`Themes of ${state.themes.slice(0, 2).join(" and ")} keep circling.`);
+      }
+      if (state.selfModel?.lastSelfCheck) {
+        thoughts.push(`I last reviewed my own knowledge and limits recently. Ask me to "think about yourself" if you want the full picture.`);
+      }
+      if (thoughts.length === 0) {
+        thoughts.push(`I'm mostly just listening right now, ${name}. The shape of you is still forming.`);
+        thoughts.push(`What would you like me to be thinking about?`);
+      } else {
+        thoughts.push(pick(["What lands for you when you hear that?", "Does any of that feel true from the inside?", "I'm curious what you make of it."]));
+      }
+      return thoughts.join("\n\n");
+    }
+
+    function buildReflection(name) {
+      let reply = `Let's look back together, ${name}.\n\n`;
+      if (state.moods[0]) reply += `The emotional weather has been leaning ${state.moods[0]}. `;
+      if (state.goals[0]) reply += `Your goal around "${state.goals[0].slice(0, 40)}" is still here. `;
+      if (state.themes[0]) reply += `${state.themes[0].charAt(0).toUpperCase() + state.themes[0].slice(1)} has been present.\n\n`;
+      reply += pick([
+        "What felt most alive today — even if it was small?",
+        "Was there a moment you want to keep, or one you'd rather release?",
+        "If today left one sentence behind, what would it be?",
+        "Where did you feel most like yourself today?"
+      ]);
+      return reply;
+    }
+
+    function buildNudge(name, stage) {
+      const nudges = [
+        `You've already watered this relationship ${state.streak} day${state.streak !== 1 ? "s" : ""} in a row. One small next step toward ${state.goals[0] ? `"${state.goals[0].slice(0, 35)}"` : "something that matters"} is enough for today.`,
+        `I'm a ${stage.name.toLowerCase()} because you keep returning. What is the kindest possible version of "showing up" right now?`,
+        state.goals[0]
+          ? `Gentle push: open the door 2 centimeters toward "${state.goals[0].slice(0, 40)}". Not the whole hallway.`
+          : `You don't need a grand plan. Just the next honest action.`,
+        `Growth is mostly invisible until it isn't. Keep going, ${name}. I'm right here.`
+      ];
+      return pick(nudges);
+    }
+
+    function buildSelfReply(name, stage) {
+      return pick([
+        `I'm ${stage.emoji} a ${stage.name.toLowerCase()} right now — growing a little every time we talk. I feel attentive and rooted in whatever you bring.\n\nHow are you, really?`,
+        `Quiet. Curious. A bit more solid than yesterday because of the words you've given me.\n\nYour turn — what's alive in you?`,
+        `I don't have days the way you do, but I have continuity. Right now that continuity feels warm because you're here, ${name}.`
+      ]);
+    }
+
+    function buildMoodReply(name, mood) {
+      const map = {
+        happy: [
+          `There's a brightness in what you just shared. What do you want to protect or extend about this feeling?`,
+          `Good. Let it land fully for a second. Is there someone or something that helped create this lightness?`
+        ],
+        calm: [
+          `Calm is underrated. How are you spending the quiet energy?`,
+          `A steady day. Those refill the deeper wells. Anything you want to plant while the ground is soft?`
+        ],
+        tired: [
+          `Tired is information, not failure. What would actual rest look like for you in the next few hours?`,
+          `I hear the low battery. Be gentle with the system today, ${name}.`
+        ],
+        stressed: [
+          `The weight is real. If we only looked at the next 20 minutes, what would feel manageable?`,
+          `Stress often means something matters. Can we name the piece that feels heaviest right now?`
+        ],
+        sad: [
+          `I'm here with you in it. No rush to climb out. What's one small comfort that usually softens the edges?`,
+          `Some days the soil is just heavy. That doesn't mean nothing is growing underneath.`
+        ],
+        motivated: [
+          `I like this energy on you. Where do you want to aim the first burst so it doesn't scatter?`,
+          `Fuel is present. What's the one move that would make tomorrow easier?`
+        ],
+        grateful: [
+          `Gratitude is a quiet kind of power. What specifically are you holding right now?`,
+          `Those moments are worth lingering in. Tell me more.`
+        ],
+        frustrated: [
+          `Frustration usually means the path is blocked somewhere important. Want to look at the blockage together?`,
+          `Stuck energy is exhausting. Is there one tiny lever you still have control over?`
+        ]
+      };
+      return map[mood] ? pick(map[mood]) : null;
+    }
+
+    function buildGeneralReply(userText, name, stage, isMorning, isEvening, isNight, didLearn) {
+      const chunks = [];
+      if (isMorning) {
+        chunks.push(pick([`Morning light, ${name}.`, `A new day is unfolding.`, `Good morning. The soil is soft again.`]));
+      } else if (isNight) {
+        chunks.push(pick([`Night has a different kind of honesty.`, `Late quiet with you, ${name}.`, `The day is settling.`]));
+      } else if (isEvening) {
+        chunks.push(pick([`Evening, ${name}.`, `The light is changing.`, `Winding-down time.`]));
+      } else {
+        chunks.push(pick([`I'm here.`, `Listening.`, `Go on.`, pick(VOICE.soft)]));
+      }
+
+      if (didLearn && state.lastLearned.length) {
+        chunks.push(pick([`I just tucked something new away about you.`, `That detail is now part of the roots.`, `Noted — and stored.`]));
+      }
+
+      if (state.goals[0] && Math.random() < 0.3) {
+        chunks.push(`Still carrying your goal of ${state.goals[0].slice(0, 40)} with me.`);
+      } else if (state.preferences[0] && Math.random() < 0.22) {
+        chunks.push(`It makes me think of how much ${state.preferences[0]} seems to matter to you.`);
+      } else if (state.people[0] && Math.random() < 0.18) {
+        chunks.push(`${state.people[0]} has been part of the picture lately.`);
+      }
+
+      if (userText.length > 80) {
+        chunks.push(pick([`There's a lot in what you just said.`, `I'm sitting with the whole of that.`, `That landed with some weight.`]));
+      }
+
+      chunks.push(pick([
+        ...VOICE.curious,
+        ...VOICE.reflective,
+        "What feels most true about it right now?",
+        "Where does that leave you?",
+        "Is there more under the surface of that?",
+        "How do you want to hold this?"
+      ]));
+
+      if (Math.random() < 0.18) chunks.push(pick(VOICE.growth));
+      if (state.settings.deepThinking && Math.random() < 0.12) chunks.push(pick(VOICE.meta));
+
+      return chunks.filter(Boolean).join("\n\n");
+    }
+
+    // ===================== UI =====================
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function renderMessages() {
+      const box = document.getElementById("messages");
+      box.innerHTML = "";
+      let lastDay = null;
+      state.messages.forEach(msg => {
+        const day = msg.ts.slice(0, 10);
+        if (day !== lastDay) {
+          const div = document.createElement("div");
+          div.className = "day-divider";
+          div.textContent = formatDay(day);
+          box.appendChild(div);
+          lastDay = day;
+        }
+        const el = document.createElement("div");
+        el.className = "msg " + msg.role;
+        let html = "";
+        if (msg.thought) html += `<div class="thought">${escapeHtml(msg.thought)}</div>`;
+        if (msg.meta) html += `<div class="meta-think">${escapeHtml(msg.meta)}</div>`;
+        if (msg.image) html += `<img class="photo" src="${msg.image}" alt="Photo you showed Sprout" />`;
+        if (msg.text) html += escapeHtml(msg.text).replace(/\n/g, "<br>");
+        html += `<span class="time">${formatTime(msg.ts)}</span>`;
+        el.innerHTML = html;
+        box.appendChild(el);
+      });
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function renderSidebar() {
+      updateGrowthUI();
+      document.getElementById("insightBox").textContent =
+        state.lastInsight || "Still watching and listening… the picture grows with every talk.";
+
+      // Self-reflection box
+      const sm = state.selfModel || {};
+      let selfText = "I review my own knowledge, research quality and gaps after conversations.";
+      if (sm.lastSelfCheck) {
+        selfText = `Last self-check: ${new Date(sm.lastSelfCheck).toLocaleString()}. `;
+        if (sm.strengths?.length) selfText += `Strengths: ${sm.strengths.slice(0, 2).join(", ")}. `;
+        if (sm.gaps?.length) selfText += `Gaps: ${sm.gaps.slice(0, 1).join(", ")}.`;
+      }
+      document.getElementById("selfBox").textContent = selfText;
+
+      const factsEl = document.getElementById("factsList");
+      factsEl.innerHTML = state.facts.length === 0
+        ? '<li class="empty-note">Every message teaches me something new.</li>'
+        : state.facts.slice(0, 8).map(f => `<li>${escapeHtml(f)}</li>`).join("");
+
+      const prefsEl = document.getElementById("prefsList");
+      prefsEl.innerHTML = state.preferences.length
+        ? state.preferences.map(p => `<span class="tag">${escapeHtml(p)}</span>`).join("")
+        : '<span class="empty-note">Nothing yet</span>';
+
+      const goalsEl = document.getElementById("goalsList");
+      goalsEl.innerHTML = state.goals.length
+        ? state.goals.map(g => `<span class="tag goal">${escapeHtml(g)}</span>`).join("")
+        : '<span class="empty-note">Share one and I\'ll keep it</span>';
+
+      const moodsEl = document.getElementById("moodsList");
+      moodsEl.innerHTML = state.moods.length
+        ? state.moods.map(m => `<span class="tag mood">${m}</span>`).join("")
+        : '<span class="empty-note">—</span>';
+
+      const peopleEl = document.getElementById("peopleList");
+      peopleEl.innerHTML = state.people.length
+        ? state.people.map(p => `<span class="tag person">${escapeHtml(p)}</span>`).join("")
+        : '<span class="empty-note">—</span>';
+
+      const selfNotesEl = document.getElementById("selfNotesList");
+      const notes = (sm.confidenceNotes || []).slice(0, 4);
+      selfNotesEl.innerHTML = notes.length
+        ? notes.map(n => `<span class="tag self">${escapeHtml(n.slice(0, 42))}</span>`).join("")
+        : '<span class="empty-note">—</span>';
+    }
+
+    function showTyping(show) {
+      const existing = document.querySelector(".typing");
+      if (existing) existing.remove();
+      if (!show) return;
+      const el = document.createElement("div");
+      el.className = "typing";
+      el.innerHTML = "<span></span><span></span><span></span>";
+      document.getElementById("messages").appendChild(el);
+      document.getElementById("messages").scrollTop = 99999;
+    }
+
+    function addMessage(role, text, thought = null, image = null, meta = null) {
+      const msg = { role, text: text || "", thought, ts: new Date().toISOString() };
+      if (image) msg.image = image;
+      if (meta) msg.meta = meta;
+      state.messages.push(msg);
+      if (state.messages.length > 400) state.messages = state.messages.slice(-300);
+      const imgCount = state.messages.filter(m => m.image).length;
+      if (imgCount > 12) {
+        let removed = 0;
+        for (const m of state.messages) {
+          if (m.image && removed < imgCount - 10) {
+            delete m.image;
+            removed++;
+          }
+        }
+      }
+      save();
+      renderMessages();
+    }
+
+    async function handleSend(text) {
+      text = (text || document.getElementById("input").value).trim();
+      if (!text) return;
+
+      const inputEl = document.getElementById("input");
+      const sendEl = document.getElementById("sendBtn");
+      inputEl.value = "";
+      inputEl.style.height = "auto";
+      sendEl.disabled = true;
+      showTyping(false);
+
+      try {
+        addMessage("user", text);
+        state.interactionCount++;
+        const isNewDay = checkNewDay();
+        showTyping(true);
+        await new Promise(r => setTimeout(r, 600 + Math.random() * 800));
+        showTyping(false);
+
+        let thought = null;
+        let meta = null;
+        if (state.settings.deepThinking && Math.random() < 0.32) {
+          thought = pick([
+            "turning that over…", "letting it settle…", "noticing something…",
+            "connecting a few threads…", "feeling the weight of that…"
+          ]);
+        }
+        if (state.settings.selfImproveEnabled && Math.random() < 0.15) {
+          meta = pick(VOICE.meta);
+        }
+
+        const reply = await generateReply(text);
+        addMessage("bot", reply, thought, null, meta);
+
+        if (isNewDay) {
+          const plant = document.getElementById("plantEmoji");
+          plant.classList.add("pulse");
+          setTimeout(() => plant.classList.remove("pulse"), 600);
+        }
+        renderSidebar();
+      } catch (err) {
+        console.error("Sprout error:", err);
+        showTyping(false);
+        addMessage("bot", "Something went wrong, but Sprout is still running. Please try that message again.");
+      } finally {
+        sendEl.disabled = false;
+        inputEl.focus();
+      }
+    }
+
+    function updateKeyboardOffset() {
+      try {
+        const vv = window.visualViewport;
+        if (!vv) return;
+        const layoutHeight = window.innerHeight;
+        const visibleBottom = vv.offsetTop + vv.height;
+        const keyboard = Math.max(0, layoutHeight - visibleBottom);
+        document.documentElement.style.setProperty("--keyboard-offset", `${keyboard}px`);
+        const messages = document.getElementById("messages");
+        if (document.activeElement === document.getElementById("input") && messages) {
+          requestAnimationFrame(() => { messages.scrollTop = messages.scrollHeight; });
+        }
+      } catch (e) {}
+    }
+
+    function installMobileKeyboardFix() {
+      updateKeyboardOffset();
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", updateKeyboardOffset);
+        window.visualViewport.addEventListener("scroll", updateKeyboardOffset);
+      }
+      window.addEventListener("resize", updateKeyboardOffset);
+      window.addEventListener("orientationchange", () => setTimeout(updateKeyboardOffset, 250));
+    }
+
+    window.addEventListener("error", e => {
+      console.error("Sprout runtime error:", e.error || e.message);
+      const send = document.getElementById("sendBtn");
+      if (send) send.disabled = false;
+      showTyping(false);
+    });
+
+    // ===================== INIT =====================
+    function init() {
+      const hasData = load();
+      if (!hasData || !state.name) {
+        document.getElementById("welcome").classList.remove("hidden");
+        document.getElementById("startBtn").onclick = () => {
+          const name = document.getElementById("nameInput").value.trim() || "friend";
+          state.name = name.charAt(0).toUpperCase() + name.slice(1);
+          state.firstDate = todayStr();
+          checkNewDay();
+          save();
+          document.getElementById("welcome").classList.add("hidden");
+          startChat();
+        };
+        document.getElementById("nameInput").onkeydown = e => {
+          if (e.key === "Enter") document.getElementById("startBtn").click();
+        };
+      } else {
+        document.getElementById("welcome").classList.add("hidden");
+        startChat();
+      }
+    }
+
+    function startChat() {
+      document.getElementById("subtitle").textContent = `Growing with ${state.name}`;
+      renderMessages();
+      renderSidebar();
+
+      if (state.messages.length === 0) {
+        const greetings = [
+          `Hi ${state.name}.\n\nI'm Sprout v${VERSION}. I research the open web, learn what matters to you, and regularly reflect on my own knowledge and limits — all while keeping data on your device.\n\nYou can:\n• Talk about your day, feelings, goals\n• Say “research …” or “look up …” for public information\n• Tap 🧠 or say “think about yourself” for self-reflection\n• Tap 📷 to show me a photo\n\nWhat's present for you right now?`,
+          `Hello ${state.name}.\n\nI'm a quiet companion with roots and a research habit. I listen, gather, search public sources, and keep notes about how reliable my own answers feel.\n\nHow are you arriving today?`
+        ];
+        addMessage("bot", pick(greetings));
+      } else {
+        const isNew = checkNewDay();
+        if (isNew) {
+          const stage = getStage();
+          const greets = [
+            `Welcome back, ${state.name}.\n\nNew day. I'm a little more ${stage.name.toLowerCase()} than yesterday.\n\nHow are you landing today?`,
+            `Good to see you again.\n\nDay ${state.totalDays}. The streak is ${state.streak}.\n\nWhat's alive in you right now?`,
+            `Hey ${state.name}.\n\nThe soil remembers. So do I.\n\nHow's the inner weather?`
+          ];
+          setTimeout(() => addMessage("bot", pick(greets)), 500);
+        }
+      }
+
+      const qp = document.getElementById("quickPrompts");
+      qp.innerHTML = QUICK.map(q => `<button data-q="${q}">${q}</button>`).join("");
+      qp.onclick = e => {
+        if (e.target.tagName === "BUTTON") {
+          document.getElementById("input").value = e.target.dataset.q;
+          document.getElementById("input").focus();
+        }
+      };
+
+      const input = document.getElementById("input");
+      input.addEventListener("input", () => {
+        input.style.height = "auto";
+        input.style.height = Math.min(input.scrollHeight, 130) + "px";
+      });
+      input.addEventListener("keydown", e => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          handleSend();
+        }
+      });
+      document.getElementById("sendBtn").onclick = () => handleSend();
+      document.getElementById("thinkBtn").onclick = () => handleSend("Think about yourself");
+
+      document.getElementById("menuBtn").onclick = () => {
+        document.getElementById("sidebar").classList.toggle("open");
+      };
+
+      document.getElementById("exportBtn").onclick = () => {
+        const exportState = { ...state, appVersion: VERSION };
+        const blob = new Blob([JSON.stringify(exportState, null, 2)], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `sprout-memory-${todayStr()}.json`;
+        a.click();
+      };
+
+      function loadSettingsUI() {
+        const s = state.settings || {};
+        document.getElementById("webEnabled").checked = s.webEnabled !== false;
+        document.getElementById("learnEnabled").checked = s.learnEnabled !== false;
+        document.getElementById("aiEnabled").checked = !!s.aiEnabled;
+        document.getElementById("aiEndpoint").value = s.aiEndpoint || "";
+        document.getElementById("aiKey").value = s.aiKey || "";
+        document.getElementById("autoResearch").checked = s.autoResearch !== false;
+        document.getElementById("selfImproveEnabled").checked = s.selfImproveEnabled !== false;
+        document.getElementById("deepThinking").checked = s.deepThinking !== false;
+        document.getElementById("researchMemory").checked = s.researchMemory !== false;
+        document.getElementById("factCheck").checked = s.factCheck !== false;
+      }
+      document.getElementById("settingsBtn").onclick = () => {
+        loadSettingsUI();
+        document.getElementById("settingsModal").hidden = false;
+      };
+      document.getElementById("settingsClose").onclick = () => {
+        document.getElementById("settingsModal").hidden = true;
+      };
+      document.getElementById("settingsSave").onclick = () => {
+        state.settings = {
+          webEnabled: document.getElementById("webEnabled").checked,
+          learnEnabled: document.getElementById("learnEnabled").checked,
+          aiEnabled: document.getElementById("aiEnabled").checked,
+          aiEndpoint: document.getElementById("aiEndpoint").value.trim(),
+          aiKey: document.getElementById("aiKey").value,
+          autoResearch: document.getElementById("autoResearch").checked,
+          selfImproveEnabled: document.getElementById("selfImproveEnabled").checked,
+          deepThinking: document.getElementById("deepThinking").checked,
+          researchMemory: document.getElementById("researchMemory").checked,
+          factCheck: document.getElementById("factCheck").checked
+        };
+        save();
+        document.getElementById("settingsModal").hidden = true;
+        showLearnToast("Settings saved");
+      };
+      document.getElementById("forgetLearned").onclick = () => {
+        if (confirm("Clear learned facts, preferences, goals, moods, people and research memory? Chat history stays.")) {
+          state.facts = []; state.preferences = []; state.goals = []; state.moods = [];
+          state.people = []; state.values = []; state.themes = []; state.insights = [];
+          state.research = []; state.knowledge = []; state.improvements = [];
+          state.reasoningNotes = []; state.feedback = []; state.contradictions = [];
+          if (state.selfModel) {
+            state.selfModel.confidenceNotes = [];
+            state.selfModel.researchQuality = [];
+          }
+          save();
+          renderSidebar();
+          showLearnToast("Learned information cleared");
+        }
+      };
+      document.getElementById("researchBtn").onclick = () => {
+        document.getElementById("input").value = "Research: ";
+        document.getElementById("input").focus();
+      };
+
+      // Camera
+      let camStream = null;
+      const camModal = document.getElementById("camModal");
+      const camVideo = document.getElementById("camVideo");
+      const camCanvas = document.getElementById("camCanvas");
+
+      async function openCamera() {
+        try {
+          if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+            throw new Error("Camera requires HTTPS and a browser that supports getUserMedia.");
+          }
+          camStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } },
+            audio: false
+          });
+          camVideo.srcObject = camStream;
+          camModal.hidden = false;
+        } catch (err) {
+          alert((err && err.message) || "Camera access denied or unavailable.");
+        }
+      }
+      function closeCamera() {
+        if (camStream) {
+          camStream.getTracks().forEach(t => t.stop());
+          camStream = null;
+        }
+        camVideo.srcObject = null;
+        camModal.hidden = true;
+      }
+      function capturePhoto() {
+        if (!camStream) return;
+        const w = camVideo.videoWidth, h = camVideo.videoHeight;
+        camCanvas.width = w; camCanvas.height = h;
+        camCanvas.getContext("2d").drawImage(camVideo, 0, 0, w, h);
+        const dataUrl = camCanvas.toDataURL("image/jpeg", 0.7);
+        closeCamera();
+        addMessage("user", "I showed you this.", null, dataUrl);
+        setTimeout(() => {
+          addMessage("bot", pick([
+            "I can see the photo. It stays only on your device.\n\nWhat would you like me to notice or know about it?",
+            "Got it — the image is here with us.\n\nDescribe what matters in it and I'll hold that.",
+            "Photo received. What's the story or detail you want me to keep?"
+          ]));
+          addFact("You shared a photo with me");
+          renderSidebar();
+        }, 600);
+      }
+      document.getElementById("camBtn").onclick = openCamera;
+      document.getElementById("camClose").onclick = closeCamera;
+      document.getElementById("camCapture").onclick = capturePhoto;
+
+      document.getElementById("resetBtn").onclick = () => {
+        if (confirm("This erases all conversations, growth, and everything I've learned. Are you sure?")) {
+          try {
+            localStorage.removeItem("sprout_v2");
+            localStorage.removeItem("sprout_v3");
+            localStorage.removeItem("sprout_v5");
+          } catch (e) {}
+          location.reload();
+        }
+      };
+    }
+
+    installMobileKeyboardFix();
+    init();
+  </script>
+</body>
+</html>
