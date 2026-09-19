@@ -1,0 +1,32 @@
+SPROUT 4 — SECURE AI GATEWAY
+
+Files:
+- sprout_ai.html  = iPhone/web chatbot
+- sprout-server.mjs = small server that keeps the AI API key off the phone
+
+1. Install Node.js 20+ on a computer/server.
+2. Put both files in the same folder.
+3. Set the server secret:
+   macOS/Linux: export OPENAI_API_KEY="your-key"
+   Windows PowerShell: $env:OPENAI_API_KEY="your-key"
+4. Optional model:
+   export OPENAI_MODEL="gpt-5.6-luna"
+5. Start:
+   node sprout-server.mjs
+6. Open the hosted Sprout page and set Secure AI gateway URL to:
+   https://YOUR-DOMAIN/chat
+
+For production, use HTTPS and restrict ALLOW_ORIGIN to your Sprout domain instead of '*'.
+Do not put the production API key into the HTML file.
+
+Sprout 4 adds:
+- long-term memory + research memory
+- relevance retrieval from learned knowledge
+- explicit memory/correction learning
+- contradiction tracking hooks
+- controlled self-improvement notes
+- deep-thinking/fact-checking instructions
+- a secure server-side AI gateway
+- optional model web-search tool support through the gateway
+
+The gateway deliberately does not expose private chain-of-thought. Sprout receives the useful answer and can store improvement signals, not hidden reasoning traces.
