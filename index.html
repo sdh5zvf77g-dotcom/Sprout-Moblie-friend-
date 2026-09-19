@@ -241,10 +241,51 @@
       border: 1px solid rgba(255,255,255,0.1); background: #10171f; color: var(--text); font-size: 0.9rem;
     }
     .settings-note { font-size: 0.75rem; color: var(--muted); line-height: 1.45; margin-top: 10px; }
-    .settings-actions { display: flex; gap: 10px; margin-top: 16px; }
-    .settings-actions button { flex: 1; border: 0; border-radius: 12px; padding: 11px; font-weight: 600; cursor: pointer; }
+    .settings-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .settings-actions button { flex: 1; min-width: 100px; border: 0; border-radius: 12px; padding: 11px; font-weight: 600; cursor: pointer; }
     .settings-actions .primary { background: var(--acc); color: #10200c; }
     .settings-actions .secondary { background: #2a3543; color: var(--text); }
+    .settings-back {
+      display: flex; gap: 10px; margin-top: 14px; padding-top: 14px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .settings-back button {
+      flex: 1; border: 0; border-radius: 12px; padding: 14px; font-weight: 700;
+      font-size: 0.95rem; cursor: pointer;
+      background: linear-gradient(135deg, var(--acc), var(--acc2)); color: #0f1419;
+    }
+    .settings-back .ghost {
+      background: #2a3543; color: var(--text); font-weight: 600;
+    }
+    .msg .md-p { margin: 0 0 0.55em; }
+    .msg .md-p:last-child { margin-bottom: 0; }
+    .msg pre.code-block {
+      background: #0d1117; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; padding: 10px 12px; overflow-x: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.82rem; line-height: 1.45; margin: 8px 0; color: #e6edf3;
+      white-space: pre; max-width: 100%;
+    }
+    .msg code.inline {
+      background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 5px;
+      font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.86em;
+    }
+    .msg.user code.inline { background: rgba(0,0,0,0.15); }
+    .code-wrap { position: relative; margin: 8px 0; }
+    .code-wrap .copy-btn {
+      position: absolute; top: 6px; right: 6px; border: 0; border-radius: 8px;
+      background: rgba(255,255,255,0.1); color: #c9d1d9; font-size: 0.7rem;
+      padding: 4px 8px; cursor: pointer;
+    }
+    .code-wrap .copy-btn:hover { background: var(--acc); color: #0f1419; }
+    .msg-actions {
+      display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;
+    }
+    .msg-actions button {
+      border: 1px solid rgba(255,255,255,0.1); background: transparent;
+      color: var(--muted); font-size: 0.72rem; padding: 3px 8px; border-radius: 8px; cursor: pointer;
+    }
+    .msg-actions button:hover { color: var(--text); border-color: var(--acc); }
     #camVideo { width: 100%; border-radius: 12px; background: #000; aspect-ratio: 4/3; object-fit: cover; }
     .cam-actions { display: flex; gap: 10px; margin-top: 12px; }
     .cam-actions button { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 600; cursor: pointer; }
@@ -330,8 +371,8 @@
   <div class="settings-modal" id="settingsModal" hidden>
     <div class="settings-box">
       <div class="settings-head">
-        <div><strong>Sprout settings</strong><small>Voice, research & learning</small></div>
-        <button id="settingsClose">×</button>
+        <div><strong>Sprout settings</strong><small>Voice, research, coding & learning</small></div>
+        <button id="settingsClose" title="Back to app">×</button>
       </div>
       <div class="setting-row"><span>Speak replies aloud</span><input type="checkbox" id="speakEnabled" checked /></div>
       <div class="setting-row"><span>Internet research</span><input type="checkbox" id="webEnabled" checked /></div>
@@ -341,14 +382,21 @@
       <div class="setting-row"><span>Remember research</span><input type="checkbox" id="researchMemory" checked /></div>
       <div class="setting-row"><span>Flag uncertain answers</span><input type="checkbox" id="factCheck" checked /></div>
       <div class="setting-row"><span>Optional AI backend</span><input type="checkbox" id="aiEnabled" /></div>
+      <div class="setting-row"><span>Coding assistant mode</span><input type="checkbox" id="codingMode" checked /></div>
+      <label class="field">Voice warmth (more human)
+        <input type="range" id="voiceWarmth" min="0" max="100" value="55" style="width:100%;margin-top:8px" />
+      </label>
       <label class="field">Voice<select id="voiceSelect"><option value="">Browser default</option></select></label>
       <label class="field">AI gateway URL<input type="url" id="aiEndpoint" placeholder="https://your-server/chat" /></label>
       <label class="field">API key (prefer server-side)<input type="password" id="aiKey" placeholder="Optional" /></label>
-      <p class="settings-note">Speech uses your browser’s built-in voices (Web Speech API). Research uses public Wikipedia + DuckDuckGo + Wikidata. No data leaves your device unless you enable an AI backend.</p>
+      <p class="settings-note">Speech uses your browser’s built-in voices. Research uses Wikipedia, DuckDuckGo, Wikidata, dictionary, Open Library, OpenStreetMap, Stack Overflow, Crossref, and more. Coding mode formats answers with code blocks. For strong coding help, connect an AI backend.</p>
       <div class="settings-actions">
         <button class="secondary" id="forgetLearned">Clear memory</button>
-        <button class="secondary" id="settingsDone">Done</button>
         <button class="primary" id="settingsSave">Save</button>
+      </div>
+      <div class="settings-back">
+        <button type="button" id="settingsBack" class="ghost">← Back to app</button>
+        <button type="button" id="settingsDone">Return to chat</button>
       </div>
     </div>
   </div>
@@ -361,14 +409,16 @@
         <button id="camCapture">Capture</button>
         <button id="camClose">Close</button>
       </div>
-      <p class="settings-note" style="text-align:center;margin-top:8px">Photos stay only on this device.</p>
+      <p class="settings-note" style="text-align:center;margin-top:8px">Classified on-device; labels researched online. Image is not uploaded.</p>
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
   <script>
 
 (function () {
-  const VERSION = "6.0";
+  const VERSION = "6.5";
   const STAGES = [
     { name: "Seed", emoji: "🌰", min: 0, desc: "Waiting for light" },
     { name: "Sprout", emoji: "🌱", min: 1, desc: "Just beginning" },
@@ -388,13 +438,22 @@
     settings: {
       speakEnabled: true, webEnabled: true, autoResearch: true, learnEnabled: true,
       selfImproveEnabled: true, researchMemory: true, factCheck: true,
-      aiEnabled: false, aiEndpoint: "", aiKey: "", voiceURI: ""
+      aiEnabled: false, aiEndpoint: "", aiKey: "", voiceURI: "", codingMode: true, voiceWarmth: 0.55
     },
     research: [], improvements: [], reasoningNotes: [], knowledge: [], feedback: [],
     researchErrors: 0,
     behavioralVersion: 0,
     activeRules: [],
     updateHistory: [],
+    pendingBookAsk: false,
+    replyStyle: {
+      usedOpeners: [],
+      usedClosers: [],
+      usedPhrases: [],
+      preferDirect: false,
+      preferCurious: true,
+      energy: "calm"
+    },
     selfModel: {
       strengths: ["listens", "local memory", "public research", "can speak"],
       gaps: ["no offline vision model", "limited without AI backend"],
@@ -413,7 +472,7 @@
       state.settings = Object.assign({
         speakEnabled: true, webEnabled: true, autoResearch: true, learnEnabled: true,
         selfImproveEnabled: true, researchMemory: true, factCheck: true,
-        aiEnabled: false, aiEndpoint: "", aiKey: "", voiceURI: ""
+        aiEnabled: false, aiEndpoint: "", aiKey: "", voiceURI: "", codingMode: true, voiceWarmth: 0.55
       }, state.settings || {});
       if (!state.selfModel) {
         state.selfModel = {
@@ -426,6 +485,10 @@
         if (!Array.isArray(state[k])) state[k] = [];
       });
       if (typeof state.behavioralVersion !== "number") state.behavioralVersion = 0;
+      if (!state.replyStyle) state.replyStyle = { usedOpeners: [], usedClosers: [], usedPhrases: [], preferDirect: false, preferCurious: true, energy: "calm" };
+      if (!Array.isArray(state.replyStyle.usedOpeners)) state.replyStyle.usedOpeners = [];
+      if (!Array.isArray(state.replyStyle.usedClosers)) state.replyStyle.usedClosers = [];
+      if (!Array.isArray(state.replyStyle.usedPhrases)) state.replyStyle.usedPhrases = [];
       return true;
     } catch (e) { storageOk = false; return false; }
   }
@@ -448,6 +511,42 @@
     return new Date(ds+"T12:00:00").toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
   }
   function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function formatMarkdown(text) {
+    // Lightweight markdown for chatbot replies: code fences, inline code, bold, lists
+    var s = String(text || "");
+    var parts = [];
+    var re = /```([a-zA-Z0-9_+-]*)\n?([\s\S]*?)```/g;
+    var last = 0, m;
+    while ((m = re.exec(s))) {
+      if (m.index > last) parts.push({ type: "text", value: s.slice(last, m.index) });
+      parts.push({ type: "code", lang: m[1] || "", value: m[2].replace(/\n$/, "") });
+      last = m.index + m[0].length;
+    }
+    if (last < s.length) parts.push({ type: "text", value: s.slice(last) });
+
+    function formatText(t) {
+      var e = escapeHtml(t);
+      e = e.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+      e = e.replace(/`([^`]+)`/g, '<code class="inline">$1</code>');
+      // simple bullets
+      e = e.replace(/(^|\n)[•\-\*] (.+)/g, "$1• $2");
+      return e.replace(/\n/g, "<br>");
+    }
+
+    var htmlOut = "";
+    parts.forEach(function(p, i) {
+      if (p.type === "code") {
+        var id = "code_" + Date.now() + "_" + i;
+        htmlOut += '<div class="code-wrap"><button type="button" class="copy-btn" data-code-id="' + id + '">Copy</button>';
+        htmlOut += '<pre class="code-block" id="' + id + '">' + escapeHtml(p.value) + "</pre></div>";
+      } else {
+        htmlOut += formatText(p.value);
+      }
+    });
+    return htmlOut;
+  }
+
   function escapeHtml(s) {
     return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
@@ -511,25 +610,86 @@
   function speak(text) {
     if (!state.settings.speakEnabled || !window.speechSynthesis) return;
     stopSpeak();
-    const clean = text
-      .replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*]+)\*/g, "$1").replace(/_([^_]+)_/g, "$1")
-      .replace(/https?:\/\/\S+/g, "link").replace(/\n+/g, ". ").replace(/\s+/g, " ").trim().slice(0, 1200);
+    var clean = text
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/_([^_]+)_/g, "$1")
+      .replace(/```[\s\S]*?```/g, " code block. ")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/https?:\/\/\S+/g, " (link) ")
+      .replace(/\n+/g, ". ")
+      .replace(/\s+/g, " ")
+      .replace(/\s*\.\s*\./g, ".")
+      .trim()
+      .slice(0, 1400);
     if (!clean) return;
-    const u = new SpeechSynthesisUtterance(clean);
-    u.rate = 1.02; u.pitch = 1;
-    const voices = getVoices();
+
+    var chunks = [];
+    var sentences = clean.split(/(?<=[.!?])\s+/);
+    var buf = "";
+    sentences.forEach(function(s) {
+      if ((buf + " " + s).length > 220) {
+        if (buf) chunks.push(buf.trim());
+        buf = s;
+      } else {
+        buf = buf ? buf + " " + s : s;
+      }
+    });
+    if (buf) chunks.push(buf.trim());
+    if (!chunks.length) chunks = [clean];
+
+    var voices = getVoices();
+    var chosen = null;
     if (state.settings.voiceURI) {
-      const v = voices.find(function(x) { return x.voiceURI === state.settings.voiceURI; });
-      if (v) u.voice = v;
-    } else {
-      const preferred = voices.find(function(v) { return /en-?(US|GB)/i.test(v.lang) && /female|samantha|google|natural/i.test(v.name); })
-        || voices.find(function(v) { return /en/i.test(v.lang); });
-      if (preferred) u.voice = preferred;
+      chosen = voices.find(function(x) { return x.voiceURI === state.settings.voiceURI; });
     }
-    u.onstart = function() { speaking = true; document.getElementById("speakToggle").classList.add("speaking"); };
-    u.onend = u.onerror = function() { speaking = false; document.getElementById("speakToggle").classList.remove("speaking"); };
-    speechSynthesis.speak(u);
+    if (!chosen) {
+      var rank = function(v) {
+        var n = (v.name || "") + " " + (v.lang || "");
+        var score = 0;
+        if (/en-?(US|GB|AU|IN)/i.test(v.lang)) score += 5;
+        if (/natural|neural|premium|enhanced|samantha|karen|moira|serena|google|microsoft|aria|jenny/i.test(n)) score += 8;
+        if (/female|woman/i.test(n)) score += 2;
+        if (/compact|offline|espeak/i.test(n)) score -= 5;
+        return score;
+      };
+      voices = voices.slice().sort(function(a, b) { return rank(b) - rank(a); });
+      chosen = voices[0] || null;
+    }
+
+    var warmth = state.settings.voiceWarmth != null ? Number(state.settings.voiceWarmth) : 0.55;
+    var rate = 0.88 + warmth * 0.14;
+    var pitch = 0.95 + warmth * 0.12;
+    if (state.replyStyle && state.replyStyle.energy === "focused") rate += 0.04;
+    if (state.replyStyle && state.replyStyle.energy === "gentle") rate -= 0.05;
+
+    var btn = document.getElementById("speakToggle");
+    var i = 0;
+    function next() {
+      if (i >= chunks.length) {
+        speaking = false;
+        if (btn) btn.classList.remove("speaking");
+        return;
+      }
+      var u = new SpeechSynthesisUtterance(chunks[i++]);
+      u.rate = rate;
+      u.pitch = pitch;
+      u.volume = 1;
+      if (chosen) u.voice = chosen;
+      u.onstart = function() {
+        speaking = true;
+        if (btn) btn.classList.add("speaking");
+      };
+      u.onend = function() { setTimeout(next, 140); };
+      u.onerror = function() {
+        speaking = false;
+        if (btn) btn.classList.remove("speaking");
+      };
+      speechSynthesis.speak(u);
+    }
+    next();
   }
+
   function stopSpeak() {
     if (window.speechSynthesis) speechSynthesis.cancel();
     speaking = false;
@@ -682,7 +842,8 @@
     strip.hidden = !show;
   }
   function shouldResearch(text) {
-    return /\b(search|look up|lookup|research|find out|latest|today|current|recent|news|who is|what is|where is|when is|how much|202[4-9]|wikipedia|online)\b/i.test(text)
+    return /\b(search|look up|lookup|research|find out|latest|today|current|recent|news|who is|what is|where is|when is|how much|how many|why is|why do|explain|tell me about|definition|define|wikipedia|online|according to|stats|history of|capital of)\b/i.test(text)
+      || /\?$/.test(text.trim())
       || /^https?:\/\//i.test(text.trim());
   }
   function fetchJson(url, timeout) {
@@ -696,90 +857,413 @@
       .finally(function() { clearTimeout(t); });
   }
 
+
   async function researchWeb(query) {
     const clean = query.replace(/^\s*(look this up:|search the web for|look up|research|find out about|search for|research:)\s*/i, "").trim();
     if (!clean) return null;
-    setResearch(true, "Searching public sources…");
+    setResearch(true, "Searching multiple sources…");
+
     const sources = [];
     const parts = [];
     let quality = "low";
-    try {
-      setResearch(true, "Wikipedia…");
-      try {
-        const search = await fetchJson("https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=" + encodeURIComponent(clean) + "&srlimit=4&format=json&origin=*");
-        const hits = (search && search.query && search.query.search) || [];
-        for (let i = 0; i < Math.min(3, hits.length); i++) {
-          try {
-            const page = await fetchJson("https://en.wikipedia.org/w/api.php?action=query&prop=extracts|info&exintro=1&explaintext=1&inprop=url&titles=" + encodeURIComponent(hits[i].title) + "&format=json&origin=*");
-            const pages = (page && page.query && page.query.pages) || {};
-            const pg = Object.values(pages)[0];
-            if (pg && pg.extract) {
-              sources.push({ title: pg.title, url: pg.fullurl || ("https://en.wikipedia.org/wiki/" + encodeURIComponent(pg.title.replace(/ /g, "_"))) });
-              parts.push(pg.extract.slice(0, 850));
-            }
-          } catch (_) {}
-        }
-      } catch (_) {}
+    const lower = clean.toLowerCase();
 
-      setResearch(true, "Open search…");
-      try {
-        const ddg = await fetchJson("https://api.duckduckgo.com/?q=" + encodeURIComponent(clean) + "&format=json&no_html=1&skip_disambig=1");
-        if (ddg && ddg.AbstractText) {
-          parts.unshift(ddg.AbstractText);
-          if (ddg.AbstractURL) sources.unshift({ title: ddg.Heading || "DuckDuckGo", url: ddg.AbstractURL });
-          quality = "medium";
-        }
-        if (ddg && ddg.RelatedTopics && ddg.RelatedTopics.length) {
-          const rel = ddg.RelatedTopics.filter(function(t) { return t.Text; }).slice(0, 3).map(function(t) { return "• " + t.Text.slice(0, 140); });
-          if (rel.length) parts.push("Related:\n" + rel.join("\n"));
-        }
-      } catch (_) {}
+    // Query routing hints
+    const wantDef = /\b(define|definition|meaning of|what does .+ mean)\b/i.test(clean) || /^[a-z]+$/i.test(clean.trim());
+    const wantPlace = /\b(where is|city|country|capital|located|map of)\b/i.test(clean);
+    const wantCode = /\b(javascript|python|typescript|stackoverflow|error|exception|how to code|programming)\b/i.test(clean);
+    const wantPaper = /\b(paper|study|research paper|doi|journal|arxiv|scholar)\b/i.test(clean);
+    const wantBook = /\b(book|author|novel|isbn)\b/i.test(clean);
+    const wantWeather = /\b(weather|temperature|forecast)\b/i.test(clean);
 
+    function addSource(title, url, kind) {
+      if (!url) return;
+      if (sources.some(function(s) { return s.url === url; })) return;
+      sources.push({ title: title, url: url, kind: kind || "web" });
+    }
+    function addPart(text) {
+      text = String(text || "").trim();
+      if (!text) return;
+      if (parts.some(function(p) { return p.slice(0, 80) === text.slice(0, 80); })) return;
+      parts.push(text);
+    }
+
+    // Run independent fetches with individual timeouts
+    async function safe(label, fn) {
       try {
-        const wd = await fetchJson("https://www.wikidata.org/w/api.php?action=wbsearchentities&search=" + encodeURIComponent(clean) + "&language=en&limit=2&format=json&origin=*");
-        if (wd && wd.search && wd.search.length) {
-          const labels = wd.search.map(function(s) { return s.label + (s.description ? " — " + s.description : ""); }).slice(0, 2);
-          if (labels.length && parts.length < 2) {
-            parts.push("Entity notes: " + labels.join("; "));
-            sources.push({ title: "Wikidata", url: "https://www.wikidata.org/wiki/" + wd.search[0].id });
+        setResearch(true, label);
+        await fn();
+      } catch (e) {
+        console.warn("Research source failed:", label, e);
+      }
+    }
+
+    // 1) Wikipedia
+    await safe("Wikipedia…", async function() {
+      const search = await fetchJson(
+        "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=" +
+        encodeURIComponent(clean) + "&srlimit=4&format=json&origin=*"
+      );
+      const hits = (search && search.query && search.query.search) || [];
+      for (var i = 0; i < Math.min(3, hits.length); i++) {
+        try {
+          const page = await fetchJson(
+            "https://en.wikipedia.org/w/api.php?action=query&prop=extracts|info&exintro=1&explaintext=1&inprop=url&titles=" +
+            encodeURIComponent(hits[i].title) + "&format=json&origin=*"
+          );
+          const pages = (page && page.query && page.query.pages) || {};
+          const pg = Object.values(pages)[0];
+          if (pg && pg.extract) {
+            addSource(pg.title, pg.fullurl || ("https://en.wikipedia.org/wiki/" + encodeURIComponent(pg.title.replace(/ /g, "_"))), "wikipedia");
+            addPart(pg.extract.slice(0, 900));
+          }
+        } catch (_) {}
+      }
+    });
+
+    // 2) DuckDuckGo Instant Answer
+    await safe("DuckDuckGo…", async function() {
+      const ddg = await fetchJson(
+        "https://api.duckduckgo.com/?q=" + encodeURIComponent(clean) + "&format=json&no_html=1&skip_disambig=1"
+      );
+      if (ddg && ddg.AbstractText) {
+        addPart(ddg.AbstractText);
+        if (ddg.AbstractURL) addSource(ddg.Heading || "DuckDuckGo", ddg.AbstractURL, "ddg");
+        quality = "medium";
+      }
+      if (ddg && ddg.RelatedTopics && ddg.RelatedTopics.length) {
+        const rel = ddg.RelatedTopics.filter(function(t) { return t.Text; }).slice(0, 3)
+          .map(function(t) { return "• " + t.Text.slice(0, 140); });
+        if (rel.length) addPart("Related:\n" + rel.join("\n"));
+      }
+      if (ddg && ddg.Answer) addPart(String(ddg.Answer));
+      if (ddg && ddg.Definition) {
+        addPart("Definition: " + ddg.Definition);
+        if (ddg.DefinitionURL) addSource("Definition source", ddg.DefinitionURL, "ddg");
+      }
+    });
+
+    // 3) Wikidata entities
+    await safe("Wikidata…", async function() {
+      const wd = await fetchJson(
+        "https://www.wikidata.org/w/api.php?action=wbsearchentities&search=" +
+        encodeURIComponent(clean) + "&language=en&limit=3&format=json&origin=*"
+      );
+      if (wd && wd.search && wd.search.length) {
+        const labels = wd.search.map(function(s) {
+          return s.label + (s.description ? " — " + s.description : "");
+        }).slice(0, 3);
+        if (labels.length) addPart("Knowledge graph: " + labels.join("; "));
+        addSource("Wikidata", "https://www.wikidata.org/wiki/" + wd.search[0].id, "wikidata");
+      }
+    });
+
+    // 4) Free Dictionary (definitions)
+    if (wantDef || parts.length < 2) {
+      await safe("Dictionary…", async function() {
+        var word = clean.replace(/^(define|definition of|meaning of)\s+/i, "").trim().split(/\s+/)[0];
+        if (!word || word.length < 2) return;
+        const dict = await fetchJson("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(word));
+        if (Array.isArray(dict) && dict[0]) {
+          const entry = dict[0];
+          const meanings = (entry.meanings || []).slice(0, 2).map(function(m) {
+            const defs = (m.definitions || []).slice(0, 2).map(function(d) { return d.definition; }).join(" ");
+            return (m.partOfSpeech || "sense") + ": " + defs;
+          });
+          if (meanings.length) {
+            addPart("Dictionary (" + word + "):\n" + meanings.join("\n"));
+            addSource("Free Dictionary", "https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(word), "dictionary");
+            quality = quality === "low" ? "medium" : quality;
           }
         }
-      } catch (_) {}
+      });
+    }
 
-      if (parts.length >= 2) quality = "high";
-      else if (parts.length === 1 && quality !== "medium") quality = "low";
+    // 5) Open Library (books)
+    if (wantBook || /\b(book|author|novel)\b/i.test(clean)) {
+      await safe("Open Library…", async function() {
+        const ol = await fetchJson("https://openlibrary.org/search.json?q=" + encodeURIComponent(clean) + "&limit=3");
+        const docs = (ol && ol.docs) || [];
+        if (docs.length) {
+          const lines = docs.slice(0, 3).map(function(d) {
+            return "• " + (d.title || "Untitled") +
+              (d.author_name && d.author_name[0] ? " — " + d.author_name[0] : "") +
+              (d.first_publish_year ? " (" + d.first_publish_year + ")" : "");
+          });
+          addPart("Books:\n" + lines.join("\n"));
+          if (docs[0].key) addSource("Open Library", "https://openlibrary.org" + docs[0].key, "books");
+          else addSource("Open Library search", "https://openlibrary.org/search?q=" + encodeURIComponent(clean), "books");
+        }
+      });
+    }
 
-      let answer = "";
-      if (parts.length) {
-        const unique = [];
-        parts.forEach(function(p) { const t = p.trim(); if (t && unique.indexOf(t) === -1) unique.push(t); });
-        answer = "I researched **" + clean + "** from public sources.\n\n" + unique.slice(0, 3).join("\n\n");
-        if (state.settings.factCheck && quality === "low") answer += "\n\n_(Limited sources — consider double-checking.)_";
+    // 6) OpenStreetMap Nominatim (places)
+    if (wantPlace) {
+      await safe("Maps…", async function() {
+        const geo = await fetchJson(
+          "https://nominatim.openstreetmap.org/search?q=" + encodeURIComponent(clean) +
+          "&format=json&limit=3",
+          8000
+        );
+        if (Array.isArray(geo) && geo.length) {
+          const lines = geo.slice(0, 3).map(function(g) {
+            return "• " + g.display_name + (g.type ? " [" + g.type + "]" : "");
+          });
+          addPart("Places:\n" + lines.join("\n"));
+          addSource("OpenStreetMap", "https://www.openstreetmap.org/search?query=" + encodeURIComponent(clean), "maps");
+          quality = quality === "low" ? "medium" : quality;
+        }
+      });
+    }
+
+    // 7) Stack Overflow (programming)
+    if (wantCode) {
+      await safe("Stack Overflow…", async function() {
+        const so = await fetchJson(
+          "https://api.stackexchange.com/2.3/search/advanced?order=desc&sort=relevance&q=" +
+          encodeURIComponent(clean) + "&site=stackoverflow&pagesize=3&filter=default"
+        );
+        const items = (so && so.items) || [];
+        if (items.length) {
+          const lines = items.slice(0, 3).map(function(it) {
+            return "• " + it.title + (it.is_answered ? " ✓" : "");
+          });
+          addPart("Stack Overflow:\n" + lines.join("\n"));
+          addSource(items[0].title.slice(0, 60), items[0].link, "stackoverflow");
+          quality = quality === "low" ? "medium" : quality;
+        }
+      });
+    }
+
+    // 8) Crossref (academic papers)
+    if (wantPaper || (parts.length < 2 && clean.split(/\s+/).length >= 3)) {
+      await safe("Scholarly…", async function() {
+        const cr = await fetchJson(
+          "https://api.crossref.org/works?query=" + encodeURIComponent(clean) + "&rows=3"
+        );
+        const items = (cr && cr.message && cr.message.items) || [];
+        if (items.length) {
+          const lines = items.slice(0, 3).map(function(it) {
+            var title = (it.title && it.title[0]) || "Untitled";
+            var year = (it.published && it.published["date-parts"] && it.published["date-parts"][0] && it.published["date-parts"][0][0]) || "";
+            var doi = it.DOI ? " https://doi.org/" + it.DOI : "";
+            return "• " + title + (year ? " (" + year + ")" : "") + doi;
+          });
+          addPart("Scholarly works:\n" + lines.join("\n"));
+          if (items[0].DOI) addSource("Crossref / DOI", "https://doi.org/" + items[0].DOI, "scholar");
+          quality = quality === "low" ? "medium" : quality;
+        }
+      });
+    }
+
+    // 9) REST Countries (country facts)
+    if (/\b(country|nation|population|capital of)\b/i.test(clean) || wantPlace) {
+      await safe("Countries…", async function() {
+        var name = clean.replace(/^(capital of|country|population of)\s+/i, "").trim();
+        if (!name) return;
+        try {
+          const countries = await fetchJson("https://restcountries.com/v3.1/name/" + encodeURIComponent(name) + "?fields=name,capital,population,region,subregion,currencies,languages");
+          if (Array.isArray(countries) && countries[0]) {
+            const c = countries[0];
+            var line = (c.name && c.name.common) || name;
+            if (c.capital && c.capital[0]) line += " — capital " + c.capital[0];
+            if (c.population) line += ", population ~" + c.population.toLocaleString();
+            if (c.region) line += ", region " + c.region;
+            addPart("Country data: " + line);
+            addSource("REST Countries", "https://restcountries.com/", "countries");
+          }
+        } catch (_) {}
+      });
+    }
+
+    // 10) Wiktionary (extra definitions)
+    if (wantDef && parts.length < 3) {
+      await safe("Wiktionary…", async function() {
+        var word = clean.replace(/^(define|definition of|meaning of)\s+/i, "").trim().split(/\s+/)[0];
+        const wt = await fetchJson(
+          "https://en.wiktionary.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&titles=" +
+          encodeURIComponent(word) + "&format=json&origin=*"
+        );
+        const pages = (wt && wt.query && wt.query.pages) || {};
+        const pg = Object.values(pages)[0];
+        if (pg && pg.extract && !pg.missing) {
+          addPart("Wiktionary: " + pg.extract.slice(0, 500));
+          addSource("Wiktionary", "https://en.wiktionary.org/wiki/" + encodeURIComponent(word), "wiktionary");
+        }
+      });
+    }
+
+    // Score quality
+    if (parts.length >= 3 || sources.length >= 3) quality = "high";
+    else if (parts.length >= 2 || sources.length >= 2) quality = quality === "low" ? "medium" : quality;
+
+    let answer = "";
+    if (parts.length) {
+      answer = synthesizeResearchAnswer(clean, parts, sources, quality) ||
+        ("I researched **" + clean + "** across public sources.
+
+" + parts.slice(0, 4).join("
+
+"));
+    } else {
+      const g = "https://www.google.com/search?q=" + encodeURIComponent(clean);
+      const ddgPage = "https://duckduckgo.com/?q=" + encodeURIComponent(clean);
+      answer = "I could not pull readable extracts for **" + clean + "** from the open APIs right now.\n\nTry:\n• " + g + "\n• " + ddgPage;
+      addSource("Google search", g, "fallback");
+      addSource("DuckDuckGo", ddgPage, "fallback");
+      quality = "fallback";
+    }
+
+    state.research.unshift({ query: clean, answer: answer, sources: sources, quality: quality, ts: new Date().toISOString() });
+    state.research = state.research.slice(0, 40);
+    if (state.settings.researchMemory && answer) {
+      state.knowledge.unshift({
+        kind: "research", query: clean, summary: answer.slice(0, 1800),
+        sources: sources.slice(0, 8), quality: quality, ts: new Date().toISOString()
+      });
+      state.knowledge = state.knowledge.slice(0, 60);
+    }
+    if (state.selfModel) {
+      state.selfModel.researchQuality.unshift({ query: clean.slice(0, 50), quality: quality, ts: new Date().toISOString() });
+      state.selfModel.researchQuality = state.selfModel.researchQuality.slice(0, 15);
+    }
+    save();
+    setResearch(false);
+    return { answer: answer, sources: sources, quality: quality };
+  }
+
+  // ---------- Vision: on-device classify + internet research ----------
+  let mobileNetModel = null;
+  let mobileNetLoading = null;
+
+  function loadMobileNet() {
+    if (mobileNetModel) return Promise.resolve(mobileNetModel);
+    if (mobileNetLoading) return mobileNetLoading;
+    if (typeof mobilenet === "undefined" || typeof tf === "undefined") {
+      return Promise.reject(new Error("Vision libraries not loaded (need network once to download the model)"));
+    }
+    setResearch(true, "Loading vision model…");
+    mobileNetLoading = mobilenet.load({ version: 2, alpha: 1.0 }).then(function(model) {
+      mobileNetModel = model;
+      mobileNetLoading = null;
+      return model;
+    }).catch(function(err) {
+      mobileNetLoading = null;
+      throw err;
+    });
+    return mobileNetLoading;
+  }
+
+  function prettyLabel(raw) {
+    return String(raw || "").split(",")[0].trim().replace(/_/g, " ");
+  }
+
+  async function assessPhotoAndResearch(canvasEl, dataUrl) {
+    showTyping(true);
+    setResearch(true, "Looking at your photo…");
+    try {
+      const model = await loadMobileNet();
+      setResearch(true, "Identifying…");
+      const predictions = await model.classify(canvasEl, 4);
+      showTyping(false);
+      setResearch(false);
+
+      if (!predictions || !predictions.length) {
+        addMessage("bot", "I looked at the photo but could not form a clear guess. Tell me what matters in it and I will remember that.");
+        return;
+      }
+
+      const top = predictions.map(function(p) {
+        return { label: prettyLabel(p.className), prob: Math.round((p.probability || 0) * 100) };
+      }).filter(function(p) { return p.prob >= 5; });
+
+      const best = top[0];
+      var summary = "Photo assessment (on your device — the image was not uploaded):\n\n";
+      summary += "Most likely: **" + best.label + "** (~" + best.prob + "%)\n";
+      if (top.length > 1) {
+        summary += "Other possibilities: " + top.slice(1).map(function(p) {
+          return p.label + " (" + p.prob + "%)";
+        }).join(", ") + "\n";
+      }
+      summary += "\nLooking this up on the public web…";
+      addMessage("bot", summary);
+      addUnique(state.facts, "You showed a photo that looked like: " + best.label, 24);
+      renderSidebar();
+
+      if (state.settings.webEnabled !== false) {
+        const result = await researchWeb("what is " + best.label);
+        if (result && result.answer) {
+          var webText = "Web context for **" + best.label + "**:\n\n" + result.answer;
+          if (result.sources && result.sources.length) {
+            addMessage("bot", webText, { sources: result.sources });
+          } else {
+            addMessage("bot", webText);
+          }
+        } else {
+          addMessage("bot", "I identified it as **" + best.label + "** but could not fetch extra web detail right now.");
+        }
       } else {
-        const g = "https://www.google.com/search?q=" + encodeURIComponent(clean);
-        answer = "I couldn't pull a readable extract for **" + clean + "**. Open a live search:\n" + g;
-        sources.push({ title: "Google search", url: g });
-        quality = "fallback";
+        addMessage("bot", "Web research is off in settings. I still guessed **" + best.label + "** on-device.");
       }
 
-      state.research.unshift({ query: clean, answer: answer, sources: sources, quality: quality, ts: new Date().toISOString() });
-      state.research = state.research.slice(0, 40);
-      if (state.settings.researchMemory && answer) {
-        state.knowledge.unshift({ kind: "research", query: clean, summary: answer.slice(0, 1800), sources: sources.slice(0, 5), quality: quality, ts: new Date().toISOString() });
-        state.knowledge = state.knowledge.slice(0, 60);
+      if (state.settings.aiEnabled && state.settings.aiEndpoint) {
+        try {
+          const visionReply = await callAIVision(dataUrl, best.label, top);
+          if (visionReply) addMessage("bot", visionReply);
+        } catch (_) {}
       }
-      if (state.selfModel) {
-        state.selfModel.researchQuality.unshift({ query: clean.slice(0, 50), quality: quality, ts: new Date().toISOString() });
-        state.selfModel.researchQuality = state.selfModel.researchQuality.slice(0, 15);
-      }
-      save();
-      setResearch(false);
-      return { answer: answer, sources: sources, quality: quality };
+
+      speak("It looks like a " + best.label);
+      if (typeof updateGrowthButton === "function") updateGrowthButton();
     } catch (err) {
-      state.researchErrors = (state.researchErrors || 0) + 1;
-      save();
+      console.warn("Vision assess failed", err);
+      showTyping(false);
       setResearch(false);
-      return { answer: "Research services were unreachable. Try again in a moment — the rest of Sprout still works.", sources: [], quality: "error" };
+      addMessage("bot",
+        "I saved the photo on your device, but vision assessment failed (" +
+        ((err && err.message) ? err.message : "model unavailable") +
+        ").\n\nDescribe what is in the picture and I can research that on the web."
+      );
+    }
+  }
+
+  async function callAIVision(dataUrl, guessLabel, topPreds) {
+    const s = state.settings;
+    if (!s.aiEnabled || !s.aiEndpoint) return null;
+    try {
+      const labels = (topPreds || []).map(function(p) { return p.label + " " + p.prob + "%"; }).join(", ");
+      const body = {
+        model: "default",
+        messages: [
+          {
+            role: "system",
+            content: "You are Sprout. On-device classification guessed: " + labels +
+              ". Interpret carefully. Do not claim certainty you do not have."
+          },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "What is in this photo? On-device guess: " + guessLabel },
+              { type: "image_url", image_url: { url: dataUrl } }
+            ]
+          }
+        ]
+      };
+      const headers = { "Content-Type": "application/json" };
+      if (s.aiKey) headers.Authorization = "Bearer " + s.aiKey;
+      const ctrl = new AbortController();
+      const timer = setTimeout(function() { ctrl.abort(); }, 35000);
+      const res = await fetch(s.aiEndpoint, {
+        method: "POST", headers: headers, body: JSON.stringify(body), signal: ctrl.signal
+      });
+      clearTimeout(timer);
+      if (!res.ok) return null;
+      const data = await res.json();
+      const reply = (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content)
+        || data.reply || data.response;
+      return typeof reply === "string" && reply.trim() ? ("AI backend view:\n\n" + reply.trim()) : null;
+    } catch (e) {
+      return null;
     }
   }
 
@@ -822,7 +1306,7 @@
       Math.floor(state.interactionCount / 3) +
       (state.feedback ? state.feedback.length * 2 : 0);
     // Need meaningful learning before an update is available
-    return score >= 12 && state.interactionCount >= 5;
+    return score >= 10 && state.interactionCount >= 4;
   }
 
   function updateGrowthButton() {
@@ -914,6 +1398,23 @@
 
     // Refresh insight
     state.lastInsight = "Growth update applied — " + summary;
+
+    // Self-update reply patterns (behavioral code layer — not source rewrite)
+    state.replyStyle = state.replyStyle || {};
+    state.replyStyle.usedOpeners = [];
+    state.replyStyle.usedClosers = [];
+    state.replyStyle.usedPhrases = [];
+    if (state.moods[0] === "stressed" || state.moods[0] === "tired") state.replyStyle.energy = "gentle";
+    else if (state.goals[0]) state.replyStyle.energy = "focused";
+    else state.replyStyle.energy = "calm";
+    state.replyStyle.preferDirect = (state.feedback && state.feedback.length > 0);
+    state.replyStyle.preferCurious = !state.replyStyle.preferDirect;
+    // Evolve strengths
+    if (state.selfModel) {
+      addUnique(state.selfModel.strengths, "varies replies using anti-repetition memory", 10);
+      addUnique(state.selfModel.strengths, "self-updates behavioral patterns after learning", 10);
+    }
+
     save();
     updateGrowthButton();
     renderSidebar();
@@ -967,7 +1468,7 @@
       const body = {
         model: "default",
         messages: [
-          { role: "system", content: "You are Sprout v" + VERSION + ", a personal AI. Be clear, honest, and useful. Use memory when relevant. Do not invent sources.\n\nMEMORY:\n" + (memory || "None yet.") },
+          { role: "system", content: "You are Sprout v" + VERSION + ", a personal AI assistant (2026-style). Be clear, honest, and useful. When coding: give working code in fenced markdown blocks, explain briefly, mention edge cases. Use memory when relevant. Do not invent sources or APIs.\n\nMEMORY:\n" + (memory || "None yet.") + (memory || "None yet.") },
           ...recent,
           { role: "user", content: userText }
         ],
@@ -986,6 +1487,301 @@
     } catch (e) { console.warn("AI backend failed", e); return null; }
   }
 
+
+  // ---------- Reply diversity (anti-repetition + self-updating style) ----------
+  function avoidRecent(options, recentKey, maxRecent) {
+    maxRecent = maxRecent || 8;
+    var style = state.replyStyle || (state.replyStyle = { usedOpeners: [], usedClosers: [], usedPhrases: [] });
+    var recent = style[recentKey] || [];
+    var fresh = options.filter(function(o) {
+      return recent.indexOf(o) === -1;
+    });
+    var choice = pick(fresh.length ? fresh : options);
+    recent.unshift(choice);
+    style[recentKey] = recent.slice(0, maxRecent);
+    return choice;
+  }
+
+  function markPhrase(p) {
+    if (!p) return;
+    var style = state.replyStyle || (state.replyStyle = { usedPhrases: [] });
+    style.usedPhrases = style.usedPhrases || [];
+    style.usedPhrases.unshift(p.slice(0, 60));
+    style.usedPhrases = style.usedPhrases.slice(0, 20);
+  }
+
+  function synthesizeResearchAnswer(clean, parts, sources, quality) {
+    // Build a tighter, less dump-like research reply
+    var unique = [];
+    parts.forEach(function(p) {
+      var t = String(p || "").trim();
+      if (!t) return;
+      // skip near-duplicates
+      if (unique.some(function(u) { return u.slice(0, 100) === t.slice(0, 100); })) return;
+      unique.push(t);
+    });
+    if (!unique.length) return null;
+
+    // Prefer shorter lead, then detail
+    unique.sort(function(a, b) { return a.length - b.length; });
+    var lead = unique[0].slice(0, 500);
+    var extra = unique.slice(1, 4).map(function(u) { return u.slice(0, 450); });
+
+    var out = "Here's what I found on **" + clean + "**:\n\n" + lead;
+    if (extra.length) {
+      out += "\n\nMore detail:\n" + extra.map(function(e, i) { return (i + 1) + ". " + e; }).join("\n\n");
+    }
+    if (quality === "low" && state.settings.factCheck !== false) {
+      out += "\n\n_Note: coverage was thin — treat this as a starting point._";
+    }
+    var kinds = [];
+    sources.forEach(function(s) {
+      if (s.kind && kinds.indexOf(s.kind) === -1) kinds.push(s.kind);
+    });
+    if (kinds.length) out += "\n\n_Looked at: " + kinds.join(", ") + "_";
+    return out;
+  }
+
+  function buildVariedReply(userText, name, stage, rules) {
+    var lower = userText.toLowerCase().trim();
+    var style = state.replyStyle || {};
+    var hour = new Date().getHours();
+    var chunks = [];
+    var isQuestion = /\?/.test(userText) || /^(who|what|when|where|why|how|is|are|can|do|does|did|will|should)\b/i.test(lower);
+    var isShort = userText.trim().length < 40;
+    var isLong = userText.trim().length > 120;
+
+    // Intent-ish routing for more varied structure
+    if (/thank|thanks|thx|appreciate/i.test(lower)) {
+      return avoidRecent([
+        "You're welcome, " + name + ".",
+        "Anytime — glad it helped.",
+        "Happy to be here for that.",
+        "Of course. Want to go further on it?"
+      ], "usedClosers");
+    }
+    if (/^(hi|hello|hey|yo|sup)\b/i.test(lower)) {
+      return avoidRecent([
+        "Hey " + name + ". What's moving in your world?",
+        "Hi — I'm here. What's on your mind?",
+        "Hello. Want company, a research dig, or a thinking partner?",
+        "Hey. How are you arriving right now?"
+      ], "usedOpeners");
+    }
+    if (/joke|funny|make me laugh/i.test(lower)) {
+      return avoidRecent([
+        "Why did the seed break up with the soil? It needed space to grow. (I'll stop.) What do you actually need?",
+        "I specialize more in roots than punchlines — but I'm here. Want a real conversation instead?",
+        "Humor mode is… experimental. Tell me something true instead?"
+      ], "usedPhrases");
+    }
+
+    // Openers — large bank, anti-repeat
+    var openersMorning = ["Morning, " + name + ".", "Fresh day — I'm with you.", "Good morning. What's first?"];
+    var openersNight = ["Late hour. I'm still here.", "Night notes with you, " + name + ".", "Quiet time — go ahead."];
+    var openersEve = ["Evening.", "Winding down with you.", "End-of-day check-in."];
+    var openersDay = [
+      "Okay — sitting with that.", "Got it.", "I'm with you.", "Heard.",
+      "Interesting angle.", "Let me take that seriously.", "Alright.",
+      "Taking that in.", "Noted.", "Hmm — there's something in that."
+    ];
+    if (hour >= 5 && hour < 12) chunks.push(avoidRecent(openersMorning, "usedOpeners"));
+    else if (hour >= 21 || hour < 5) chunks.push(avoidRecent(openersNight, "usedOpeners"));
+    else if (hour >= 18) chunks.push(avoidRecent(openersEve, "usedOpeners"));
+    else chunks.push(avoidRecent(openersDay, "usedOpeners"));
+
+    // Reflect content back briefly (varies by length)
+    if (isLong) {
+      chunks.push(avoidRecent([
+        "There's a lot packed into what you said — I'll stay with the core of it.",
+        "That landed with weight. I don't want to flatten it.",
+        "I'm tracking several threads in there."
+      ], "usedPhrases"));
+    } else if (isQuestion) {
+      chunks.push(avoidRecent([
+        "Good question.",
+        "Let's look at that directly.",
+        "I'll answer as clearly as I can."
+      ], "usedPhrases"));
+    }
+
+    // Memory callouts (varied, not always goals)
+    var memBits = [];
+    if (state.goals[0]) memBits.push("Your goal around \"" + state.goals[0].slice(0, 36) + "\" is still on my map.");
+    if (state.preferences[0]) memBits.push("This makes me think of how much " + state.preferences[0] + " matters to you.");
+    if (state.people[0] && Math.random() < 0.5) memBits.push(state.people[0] + " has been part of the picture lately.");
+    if (state.themes[0]) memBits.push("The theme of " + state.themes[0] + " keeps showing up.");
+    if (state.knowledge[0] && Math.random() < 0.35) {
+      memBits.push("I still have research notes on \"" + (state.knowledge[0].query || "").slice(0, 40) + "\" if useful.");
+    }
+    if (memBits.length && Math.random() < 0.45) {
+      chunks.push(pick(memBits));
+    }
+
+    // Active rules influence
+    if (rules && rules.length && Math.random() < 0.35) {
+      var rule = rules[Math.floor(Math.random() * Math.min(rules.length, 6))];
+      chunks.push(avoidRecent([
+        "Keeping this rule in mind: " + rule.slice(0, 70),
+        "Guided a bit by what I've been learning to prioritize."
+      ], "usedPhrases"));
+    }
+
+    // Mood-specific
+    if (state.moods[0] && /feel|feeling|mood|i'm |i am |today/i.test(lower)) {
+      var moodMap = {
+        tired: ["Tired is data, not a verdict. What would actual rest look like for an hour?", "Low battery days count. One gentle next step is enough."],
+        stressed: ["Stress usually means something matters. What's the heaviest piece right now?", "We can shrink the window — next 20 minutes only. What fits?"],
+        sad: ["I'm here with you in it. No rush out.", "Heavy weather. What's one small comfort that usually helps a little?"],
+        happy: ["Hold onto that brightness a second. What helped create it?", "Good. Want to protect that feeling or share it?"],
+        motivated: ["Fuel's here — where should the first focused burst go?", "Channel it before it scatters. One concrete move?"],
+        calm: ["Calm is useful ground. Anything you want to plant while it's steady?", "Steady is underrated. How do you want to use it?"],
+        grateful: ["Gratitude is a quiet power. What specifically are you holding?", "Those moments are worth naming fully."],
+        frustrated: ["Blocked energy is exhausting. Is there one lever you still control?", "Frustration often points at a stuck door. Want to name the blockage?"]
+      };
+      var opts = moodMap[state.moods[0]];
+      if (opts) chunks.push(avoidRecent(opts, "usedClosers"));
+    } else {
+      // Closers / questions — large bank
+      var closers = [
+        "What feels most true about that right now?",
+        "Where does that leave you?",
+        "What do you want to do with this?",
+        "Is there a next step, or do you just need it heard?",
+        "Want me to dig into this, or sit with it?",
+        "What part is hardest to say out loud?",
+        "If this had a simple name, what would it be?",
+        "How can I be most useful on this?",
+        "What's the smaller version of this problem?",
+        "What would 'slightly better' look like today?",
+        "Tell me the part that still feels unfinished.",
+        "Should we research this, plan it, or just unpack it?"
+      ];
+      if (style.preferDirect) {
+        closers = ["What's the actual ask?", "Bottom line — what do you need from me?", "Want options, a plan, or a mirror?"].concat(closers);
+      }
+      chunks.push(avoidRecent(closers, "usedClosers"));
+    }
+
+    // Occasional growth line (rare)
+    if (Math.random() < 0.1) {
+      chunks.push(avoidRecent([
+        "Growth is rarely loud.",
+        "Even small roots matter.",
+        "We're both still becoming.",
+        "Showing up is already a kind of progress."
+      ], "usedPhrases"));
+    }
+
+    // Behavioral version subtle mark after updates
+    if (state.behavioralVersion > 0 && Math.random() < 0.08) {
+      chunks.push("(Responding with growth update v" + state.behavioralVersion + " patterns.)");
+    }
+
+    selfImprove();
+    // Micro self-update of style from conversation shape
+    microStyleUpdate(userText);
+    save();
+    return chunks.filter(Boolean).join("\n\n");
+  }
+
+  function microStyleUpdate(userText) {
+    // Lightweight automatic adaptation — changes replyStyle over time
+    if (!state.replyStyle) state.replyStyle = {};
+    var s = state.replyStyle;
+    var lower = (userText || "").toLowerCase();
+    if (/\b(short|brief|tl;dr|bottom line|just answer)\b/.test(lower)) s.preferDirect = true;
+    if (/\b(tell me more|curious|explore|deeper)\b/.test(lower)) s.preferCurious = true;
+    if (/\b(urgent|asap|quick)\b/.test(lower)) s.energy = "focused";
+    if (/\b(calm|gentle|soft)\b/.test(lower)) s.energy = "calm";
+    // Auto growth nudge every 8 interactions if learning is rich
+    if (state.interactionCount && state.interactionCount % 8 === 0 && growthReady()) {
+      // silent consolidation of one rule if none yet
+      if ((!state.activeRules || !state.activeRules.length) && state.goals[0]) {
+        state.activeRules = state.activeRules || [];
+        state.activeRules.unshift("Keep goal visible: " + state.goals[0].slice(0, 50));
+        state.activeRules = state.activeRules.slice(0, 12);
+      }
+    }
+  }
+
+
+  function isBookRequest(text) {
+    return /\b(book to read|something to read|recommend (a |me a )?book|find (a |me a )?book|free book|what should i read|reading suggestion|suggest (a )?book|ebook)\b/i.test(text);
+  }
+
+  function extractBookPrefs(text) {
+    var prefs = { genre: "", author: "", topic: "" };
+    var m = text.match(/\b(?:about|on)\s+(.{2,40}?)(?:\.|$|,|!|\?)/i);
+    if (m) prefs.topic = m[1].trim();
+    m = text.match(/\bby\s+([A-Za-z][A-Za-z.\-]+(?:\s+[A-Za-z][A-Za-z.\-]+)?)/);
+    if (m) prefs.author = m[1].trim();
+    var genres = ["sci-fi","science fiction","fantasy","mystery","romance","horror","history","philosophy","poetry","adventure","classic","children","comedy","drama","biography","thriller","crime","detective"];
+    var lower = text.toLowerCase();
+    for (var i = 0; i < genres.length; i++) {
+      if (lower.indexOf(genres[i]) !== -1) { prefs.genre = genres[i]; break; }
+    }
+    if (!prefs.genre && !prefs.topic && !prefs.author && text.trim().length < 80 && !isBookRequest(text)) {
+      prefs.topic = text.trim().replace(/^(i(?:'m| am) (?:looking for|into)\s+)/i, "");
+    }
+    return prefs;
+  }
+
+  async function findFreeBooks(prefs) {
+    setResearch(true, "Searching free books…");
+    var q = [prefs.genre, prefs.topic, prefs.author].filter(Boolean).join(" ").trim() || "fiction";
+    var results = [];
+    try {
+      var gurl = "https://gutendex.com/books/?search=" + encodeURIComponent(prefs.author || q);
+      const g = await fetchJson(gurl, 12000);
+      ((g && g.results) || []).slice(0, 6).forEach(function(b) {
+        var formats = b.formats || {};
+        var readUrl = formats["text/html"] || formats["text/html; charset=utf-8"] ||
+          formats["application/epub+zip"] || formats["text/plain; charset=utf-8"] ||
+          formats["text/plain"] || ("https://www.gutenberg.org/ebooks/" + b.id);
+        var authors = (b.authors || []).map(function(a) { return a.name; }).join(", ");
+        results.push({ title: b.title, authors: authors || "Unknown", source: "Project Gutenberg (free)", readUrl: readUrl });
+      });
+    } catch (e) { console.warn("Gutendex", e); }
+    try {
+      const ol = await fetchJson("https://openlibrary.org/search.json?q=" + encodeURIComponent(q) + "&limit=8");
+      ((ol && ol.docs) || []).slice(0, 5).forEach(function(d) {
+        var readUrl = (d.ia && d.ia[0]) ? ("https://archive.org/details/" + d.ia[0]) :
+          (d.key ? ("https://openlibrary.org" + d.key) : null);
+        if (!readUrl) return;
+        results.push({
+          title: d.title || "Untitled",
+          authors: ((d.author_name || []).slice(0, 2).join(", ")) || "Unknown",
+          source: "Open Library / Internet Archive",
+          readUrl: readUrl
+        });
+      });
+    } catch (e) { console.warn("OpenLibrary", e); }
+    setResearch(false);
+    var seen = {};
+    return results.filter(function(r) {
+      var k = (r.title || "").toLowerCase();
+      if (seen[k]) return false;
+      seen[k] = true;
+      return true;
+    }).slice(0, 8);
+  }
+
+  function formatBookResults(results, prefs) {
+    if (!results.length) {
+      return "I could not find a free ebook match yet. Try another genre, topic, or author — for example \"classic mystery\" or \"books by Jane Austen\".";
+    }
+    var focus = [prefs.genre, prefs.topic, prefs.author].filter(Boolean).join(" / ") || "your request";
+    var lines = ["Here are **free books** you can read online for **" + focus + "**:", ""];
+    results.forEach(function(r, i) {
+      lines.push((i + 1) + ". **" + r.title + "** — " + r.authors);
+      lines.push("   " + r.source + ": " + r.readUrl);
+      lines.push("");
+    });
+    lines.push("Links are public-domain (Gutenberg) or library/archive pages when available. Want a different genre or a shorter read?");
+    return lines.join("\n");
+  }
+
   async function generateReply(userText) {
     const lower = userText.toLowerCase().trim();
     const name = state.name || "friend";
@@ -993,6 +1789,34 @@
     learnFrom(userText);
     // Active rules from growth updates (behavioral layer)
     const rules = state.activeRules || [];
+    const codingMode = state.settings.codingMode !== false;
+    const isCodeAsk = codingMode && /\b(code|function|script|python|javascript|typescript|html|css|react|api|bug|error|regex|sql|algorithm|implement|refactor|debug|snippet|class |const |let |def |import )\b/i.test(userText);
+
+    // Free book finder: ask preferences, then search free ebooks
+    if (state.pendingBookAsk) {
+      state.pendingBookAsk = false;
+      save();
+      var prefs = extractBookPrefs(userText);
+      if (!prefs.genre && !prefs.topic && !prefs.author) {
+        state.pendingBookAsk = true;
+        save();
+        return "Still with you — pick a genre, a topic, or an author you like.";
+      }
+      selfImprove();
+      var books = await findFreeBooks(prefs);
+      return formatBookResults(books, prefs);
+    }
+    if (isBookRequest(userText)) {
+      var prefs0 = extractBookPrefs(userText);
+      if (!prefs0.genre && !prefs0.topic && !prefs0.author) {
+        state.pendingBookAsk = true;
+        save();
+        return "I'd love to find you a free book to read. What are you in the mood for — a genre (mystery, sci-fi, classics…), a topic, or an author?";
+      }
+      selfImprove();
+      var books0 = await findFreeBooks(prefs0);
+      return formatBookResults(books0, prefs0);
+    }
 
     if (/\b(think about yourself|reflect on yourself|how do you work|what are your limits|introspect)\b/i.test(lower) || lower === "think about yourself") {
       return deepSelfReflection();
@@ -1014,41 +1838,51 @@
     const ai = await callAI(userText);
     if (ai) { selfImprove(); return ai; }
 
-    const chunks = [];
-    const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) chunks.push(pick(["Morning light.", "A new day is unfolding.", "Good morning."]));
-    else if (hour >= 21 || hour < 5) chunks.push(pick(["Night has a quieter honesty.", "Late quiet with you."]));
-    else if (hour >= 18) chunks.push(pick(["Evening.", "The light is changing."]));
-    else chunks.push(pick(["I'm here.", "Listening.", "Go on."]));
+    // Local coding assistant scaffold (best with AI backend; still useful offline)
+    if (isCodeAsk) {
+      selfImprove();
+      return buildCodeReply(userText, name);
+    }
 
-    if (state.goals[0] && Math.random() < 0.35) chunks.push("Still holding your goal of " + state.goals[0].slice(0, 40) + ".");
-    // After a growth update, lean harder on active rules
-    if (rules.length && Math.random() < 0.4) {
-      const rule = rules[Math.floor(Math.random() * Math.min(rules.length, 5))];
-      if (/goal/i.test(rule) && state.goals[0]) chunks.push("Keeping your goal in view.");
-      else if (/mood/i.test(rule) && state.moods[0]) chunks.push("Noticing the recent mood thread.");
-      else if (/research|uncertain/i.test(rule)) chunks.push("I'll stay careful about uncertain claims.");
-      else if (/correction|honor/i.test(rule)) chunks.push("I'm treating your corrections as high priority.");
+    return buildVariedReply(userText, name, stage, rules);
+  }
+
+
+  function buildCodeReply(userText, name) {
+    var lang = "javascript";
+    var lower = userText.toLowerCase();
+    if (/python|django|flask|pandas/.test(lower)) lang = "python";
+    else if (/typescript|tsx/.test(lower)) lang = "typescript";
+    else if (/\bhtml\b|\bcss\b/.test(lower)) lang = "html";
+    else if (/\bsql\b/.test(lower)) lang = "sql";
+    else if (/bash|shell|terminal/.test(lower)) lang = "bash";
+
+    var sample = "";
+    if (lang === "python") {
+      sample = "def main():\n    # TODO: implement from your description\n    print(\"hello\")\n\nif __name__ == \"__main__\":\n    main()";
+    } else if (lang === "sql") {
+      sample = "SELECT *\nFROM table_name\nWHERE condition = true\nLIMIT 50;";
+    } else if (lang === "bash") {
+      sample = "#!/usr/bin/env bash\nset -euo pipefail\n# TODO: your steps here\necho \"done\"";
+    } else if (lang === "html") {
+      sample = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <title>Demo</title>\n</head>\n<body>\n  <h1>Hello</h1>\n</body>\n</html>";
+    } else {
+      sample = "function example() {\n  // TODO: implement from your description\n  return true;\n}\n\nconsole.log(example());";
     }
-    if (state.moods[0] && /feel|feeling|mood|i'm |i am /i.test(lower)) {
-      const moodLines = {
-        tired: "Tired is information, not failure. What would real rest look like for the next hour?",
-        stressed: "The weight is real. What feels manageable in the next 20 minutes?",
-        sad: "I'm here with you in it. No rush to climb out.",
-        happy: "There's brightness in that. What do you want to protect about this feeling?",
-        motivated: "Good energy. Where should the first burst go so it doesn't scatter?"
-      };
-      if (moodLines[state.moods[0]]) chunks.push(moodLines[state.moods[0]]);
-    }
-    chunks.push(pick(["What feels most true about that right now?", "Where does that leave you?", "Tell me more about that?", "How do you want to hold this?"]));
-    if (Math.random() < 0.15) chunks.push(pick(["Growth is rarely loud.", "Even small roots matter.", "We're both still becoming."]));
-    // Soft self-update: sometimes surface a recent improvement focus
-    const hints = improvementHints();
-    if (hints.length && Math.random() < 0.12) {
-      chunks.push("(I'm also updating how I listen — focus: " + hints[0].toLowerCase() + ")");
-    }
-    selfImprove();
-    return chunks.filter(Boolean).join("\n\n");
+    sample = sample.replace(/\\n/g, "\n").replace(/\\"/g, '"');
+
+    var lines = [
+      "Coding mode is on. Here is a solid starting structure in **" + lang + "** — adapt it to your exact need:",
+      "",
+      "```" + lang,
+      sample,
+      "```",
+      "",
+      "For stronger, project-aware coding help, connect an AI backend in Settings (OpenAI-compatible gateway).",
+      "",
+      "Tell me: language, inputs/outputs, and any error text — and I will refine this."
+    ];
+    return lines.join(String.fromCharCode(10));
   }
 
   function buildMemory(name, stage) {
@@ -1083,7 +1917,7 @@
     const box = document.getElementById("messages");
     box.innerHTML = "";
     let lastDay = null;
-    state.messages.forEach(function(msg) {
+    state.messages.forEach(function(msg, idx) {
       const day = msg.ts.slice(0, 10);
       if (day !== lastDay) {
         const d = document.createElement("div");
@@ -1097,7 +1931,7 @@
       let html = "";
       if (msg.thought) html += '<div class="thought">' + escapeHtml(msg.thought) + "</div>";
       if (msg.image) html += '<img class="photo" src="' + msg.image + '" alt="Photo" />';
-      if (msg.text) html += escapeHtml(msg.text).replace(/\n/g, "<br>");
+      if (msg.text) html += (msg.role === "bot" ? formatMarkdown(msg.text) : escapeHtml(msg.text).replace(/\n/g, "<br>"));
       if (msg.sources && msg.sources.length) {
         html += '<div class="sources"><small>Sources</small><br>' +
           msg.sources.map(function(s) {
@@ -1105,10 +1939,40 @@
           }).join(" · ") + "</div>";
       }
       html += '<span class="time">' + formatTime(msg.ts) + "</span>";
+      // Actions on latest bot message
+      if (msg.role === "bot" && idx === state.messages.length - 1) {
+        html += '<div class="msg-actions"><button type="button" data-act="regen">Regenerate</button><button type="button" data-act="speak">Speak</button></div>';
+      }
       el.innerHTML = html;
       box.appendChild(el);
+      if (msg.role === "bot" && idx === state.messages.length - 1) {
+        el.querySelectorAll(".msg-actions button").forEach(function(b) {
+          b.onclick = function() {
+            var act = b.getAttribute("data-act");
+            if (act === "speak") speak(msg.text || "");
+            if (act === "regen") regenerateLast();
+          };
+        });
+      }
     });
     box.scrollTop = box.scrollHeight;
+    // Copy buttons on code blocks
+    box.querySelectorAll(".copy-btn").forEach(function(btn) {
+      btn.onclick = function() {
+        var id = btn.getAttribute("data-code-id");
+        var el = document.getElementById(id);
+        if (!el) return;
+        var text = el.textContent || "";
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function() {
+            btn.textContent = "Copied";
+            setTimeout(function() { btn.textContent = "Copy"; }, 1200);
+          });
+        } else {
+          toast("Copy not available");
+        }
+      };
+    });
   }
 
   function renderSidebar() {
@@ -1164,6 +2028,34 @@
     save();
     renderMessages();
     return msg;
+  }
+
+
+  async function regenerateLast() {
+    // Remove last bot message and re-answer last user message
+    if (state.messages.length < 2) return;
+    var last = state.messages[state.messages.length - 1];
+    if (last.role !== "bot") return;
+    state.messages.pop();
+    var userMsg = null;
+    for (var i = state.messages.length - 1; i >= 0; i--) {
+      if (state.messages[i].role === "user") { userMsg = state.messages[i]; break; }
+    }
+    if (!userMsg || !userMsg.text) { renderMessages(); return; }
+    save();
+    renderMessages();
+    showTyping(true);
+    try {
+      var reply = await generateReply(userMsg.text);
+      var textOut = typeof reply === "string" ? reply : reply.text;
+      var sources = typeof reply === "object" ? reply.sources : null;
+      showTyping(false);
+      addMessage("bot", textOut, { sources: sources });
+      speak(textOut);
+    } catch (e) {
+      showTyping(false);
+      addMessage("bot", "Could not regenerate. Try sending again.");
+    }
   }
 
   async function handleSend(text) {
@@ -1299,6 +2191,10 @@
       document.getElementById("researchMemory").checked = s.researchMemory !== false;
       document.getElementById("factCheck").checked = s.factCheck !== false;
       document.getElementById("aiEnabled").checked = !!s.aiEnabled;
+      var cm = document.getElementById("codingMode");
+      if (cm) cm.checked = s.codingMode !== false;
+      var vw = document.getElementById("voiceWarmth");
+      if (vw) vw.value = String(Math.round((s.voiceWarmth != null ? s.voiceWarmth : 0.55) * 100));
       document.getElementById("aiEndpoint").value = s.aiEndpoint || "";
       document.getElementById("aiKey").value = s.aiKey || "";
       populateVoices();
@@ -1309,6 +2205,8 @@
     }
     document.getElementById("settingsClose").onclick = closeSettings;
     document.getElementById("settingsDone").onclick = closeSettings;
+    var backBtn = document.getElementById("settingsBack");
+    if (backBtn) backBtn.onclick = closeSettings;
     document.getElementById("settingsModal").addEventListener("click", function(e) {
       if (e.target === document.getElementById("settingsModal")) closeSettings();
     });
@@ -1327,7 +2225,11 @@
         aiEnabled: document.getElementById("aiEnabled").checked,
         aiEndpoint: document.getElementById("aiEndpoint").value.trim(),
         aiKey: document.getElementById("aiKey").value,
-        voiceURI: document.getElementById("voiceSelect").value
+        voiceURI: document.getElementById("voiceSelect").value,
+        codingMode: document.getElementById("codingMode") ? document.getElementById("codingMode").checked : true,
+        voiceWarmth: document.getElementById("voiceWarmth")
+          ? (Number(document.getElementById("voiceWarmth").value) / 100)
+          : 0.55
       };
       save(); updateSpeakBtn();
       closeSettings();
@@ -1370,20 +2272,18 @@
       document.getElementById("camVideo").srcObject = null;
       document.getElementById("camModal").hidden = true;
     };
-    document.getElementById("camCapture").onclick = function() {
+    document.getElementById("camCapture").onclick = async function() {
       if (!camStream) return;
       const v = document.getElementById("camVideo");
       const c = document.getElementById("camCanvas");
       c.width = v.videoWidth; c.height = v.videoHeight;
       c.getContext("2d").drawImage(v, 0, 0);
-      const data = c.toDataURL("image/jpeg", 0.7);
+      const data = c.toDataURL("image/jpeg", 0.72);
       document.getElementById("camClose").click();
       addMessage("user", "I showed you this.", { image: data });
-      setTimeout(function() {
-        addMessage("bot", "Photo received — it stays only on your device.\n\nWhat should I notice or remember about it?");
-        addUnique(state.facts, "You shared a photo with me", 24);
-        renderSidebar();
-      }, 500);
+      addUnique(state.facts, "You shared a photo with me", 24);
+      renderSidebar();
+      await assessPhotoAndResearch(c, data);
     };
 
     if (window.visualViewport) {
